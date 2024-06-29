@@ -26,11 +26,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+//√
+
 #ifndef _FLEX_MAZE_TYPES_H_
 #define _FLEX_MAZE_TYPES_H_
 
 namespace fr {
-  class FlexMazeIdx {
+  //迷宫布线的索引
+  class FlexMazeIdx { 
   public:
     FlexMazeIdx(): xIdx(-1), yIdx(-1), zIdx(-1) {}
     FlexMazeIdx(frMIdx xIn, frMIdx yIn, frMIdx zIn): xIdx(xIn), yIdx(yIn), zIdx(zIn) {}

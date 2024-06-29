@@ -39,6 +39,7 @@
 //#include <boost/pool/pool_alloc.hpp>
 
 namespace fr {
+  //波前网格类
   class FlexWavefrontGrid {
   public:
     FlexWavefrontGrid(): xIdx(-1), yIdx(-1), zIdx(-1), pathCost(0), cost(0), layerPathArea(0), 
@@ -55,10 +56,10 @@ namespace fr {
                       xIdx(xIn), yIdx(yIn), zIdx(zIn), pathCost(pathCostIn), cost(costIn), 
                       layerPathArea(layerPathAreaIn), vLengthX(vLengthXIn), vLengthY(vLengthYIn),
                       dist(distIn), prevViaUp(prevViaUpIn), tLength(tLengthIn), /*preTurnDir(preTurnDirIn),*/ backTraceBuffer() {}
-    FlexWavefrontGrid(int xIn, int yIn, int zIn, frCoord layerPathAreaIn, 
-                      frCoord vLengthXIn, frCoord vLengthYIn,
-                      bool prevViaUpIn, frCoord tLengthIn,
-                      frCoord distIn, frCost pathCostIn, frCost costIn, /*frDirEnum preTurnDirIn,*/
+    FlexWavefrontGrid(int xIn/*当前点的x*/, int yIn/*当前点的y*/, int zIn/*当前点的z*/, frCoord layerPathAreaIn/*面积约束*/, 
+                      frCoord vLengthXIn/*max()*/, frCoord vLengthYIn/*max()*/,
+                      bool prevViaUpIn/*true*/, frCoord tLengthIn/*max()*/,
+                      frCoord distIn/*曼哈顿距离*/, frCost pathCostIn/*0*/, frCost costIn/*估计成本*/, /*frDirEnum preTurnDirIn,*/
                       std::bitset<WAVEFRONTBITSIZE> backTraceBufferIn): 
                       xIdx(xIn), yIdx(yIn), zIdx(zIn), pathCost(pathCostIn), cost(costIn), 
                       layerPathArea(layerPathAreaIn), vLengthX(vLengthXIn), vLengthY(vLengthYIn),

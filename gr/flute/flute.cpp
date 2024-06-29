@@ -40,6 +40,7 @@ using namespace std;
 
 namespace flute {
 
+    ////这一堆在定义MGROUP 和 MPOWV的值，分别是7!-15、8!-33、9!-79的值/////
     #if FLUTE_D<=7
     #define MGROUP 5040/4  // Max. # of groups, 7! = 5040
     #define MPOWV 15  // Max. # of POWVs per group
@@ -50,7 +51,8 @@ namespace flute {
     #define MGROUP 362880/4  // Max. # of groups, 9! = 362880
     #define MPOWV 79  // Max. # of POWVs per group
     #endif
-    int numgrp[10]={0,0,0,0,6,30,180,1260,10080,90720};
+    int numgrp[10]={0,0,0,0,6,30,180,1260,10080,90720};//30 = 6*5;180=30*6;1260=180*7;10080=1260*8;90720=10080*9
+    ////////////////////////////////////////////////////////////////////
     
     struct csoln 
     {

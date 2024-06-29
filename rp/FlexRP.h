@@ -32,8 +32,8 @@
 #include "frDesign.h"
 #include <boost/icl/interval_set.hpp>
 
-namespace fr {
-  class FlexRP {
+namespace fr {  //命名空间fr
+  class FlexRP {  //弹性RP
   public:
     // constructor
     FlexRP(frDesign *designIn, frTechObject* techIn): design(designIn), tech(techIn) {}
@@ -44,8 +44,8 @@ namespace fr {
 
     void main();
   protected:
-    frDesign* design;
-    frTechObject* tech;
+    frDesign* design; //指向frDesign的指针 - frDesign.h中
+    frTechObject* tech; //指向frTechObject的指针
 
     // init
     void init();

@@ -139,6 +139,7 @@ namespace fr {
         in.set(xCoords.front(), yCoords.front(), xCoords.back(), yCoords.back());
       }
     }
+    //获取x、y、z的维度 - int数组的个数
     void getDim(frMIdx &xDim, frMIdx &yDim, frMIdx &zDim) const {
       xDim = xCoords.size();
       yDim = yCoords.size();
@@ -309,25 +310,34 @@ namespace fr {
       return (sol);
     }
     // unsafe access
+    //计算在给定网格坐标和方向上边缘的长度
+    //接收四个参数：x、y、z网格的索引和方向dir，返回一个frCoord类型的值，该值表示边缘的长度
     frCoord getEdgeLength(frMIdx x, frMIdx y, frMIdx z, frDirEnum dir) {
+      //用来存储计算出的边缘长度
       frCoord sol = 0;
-      correct(x, y, z, dir);
+      //可能是对输入的坐标和方向进行某种校验或调整
+      correct(x, y, z, dir);  
+      //注释部分可能用于检查当前的坐标和方向是否有效
       //if (isValid(x, y, z, dir)) {
         switch (dir) {
           case frDirEnum::E:
+            //方向是东(frDirEnum::E)，计算x坐标相邻网格的X坐标差值，赋值给sol
             sol = xCoords[x+1] - xCoords[x];
             break;
           case frDirEnum::N:
+            //方向是北(frDirEnum::N)，计算y坐标相邻网格的Y坐标差值，赋值给sol
             sol = yCoords[y+1] - yCoords[y];
             break;
           case frDirEnum::U:
+            //方向是上(frDirEnum::U)，计算z坐标相邻网格的Z高度差值，赋值给sol
             sol = zHeights[z+1] - zHeights[z];
             break;
           default:
             ;
         }
       //}
-      return sol;
+      //返回计算出的边缘长度
+      return sol; 
     }
     bool isEdgeInBox(frMIdx x, frMIdx y, frMIdx z, frDirEnum dir, const frBox &box, bool initDR) {
       bool sol = false;

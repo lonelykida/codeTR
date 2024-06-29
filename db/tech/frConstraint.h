@@ -379,27 +379,29 @@ namespace fr {
   };
 
   // minArea
-
+  //面积约束
   class frAreaConstraint : public frConstraint {
   public:
     // constructor
-    frAreaConstraint(frCoord minAreaIn) {
+    frAreaConstraint(frCoord minAreaIn) { //设置最小约束
       minArea = minAreaIn;
     }
     // getter
-    frCoord getMinArea() {
+    //获取最小约束
+    frCoord getMinArea() {  
       return minArea;
     }
     // setter
+    //设置最小面积
     void setMinArea(frCoord &minAreaIn) {
       minArea = minAreaIn;
     }
 
     frConstraintTypeEnum typeId() const override {
-      return frConstraintTypeEnum::frcAreaConstraint;
+      return frConstraintTypeEnum::frcAreaConstraint; //1 - 就是面积约束枚举
     }
   protected:
-    frCoord minArea;
+    frCoord minArea;  //最小面积
   };
 
   // minWidth

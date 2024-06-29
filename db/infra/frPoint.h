@@ -29,14 +29,17 @@
 #ifndef _FR_POINT_H_
 #define _FR_POINT_H_
 
+//√
 #include "frBaseTypes.h"
 
 namespace fr {
   class frTransform;
 
+  //点的构造 - 保存每个点的x,y坐标
   class frPoint {
   public:
     // constructors
+    //初始化xCoord和yCoord成员变量
     frPoint(): xCoord(0), yCoord(0) {}
     frPoint(const frPoint &tmpPoint): xCoord(tmpPoint.xCoord), yCoord(tmpPoint.yCoord) {}
     frPoint(const frCoord tmpX, const frCoord tmpY)
