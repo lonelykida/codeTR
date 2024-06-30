@@ -176,7 +176,7 @@ using namespace fr;
     } else {
       nextWavefrontGrid.setPrevViaUp(true);
     }
-    //增加波前网格的层路径面积，计算上一个网格的一半via包围区域
+    //增加波前网格的层路径面积约束，计算上一个网格的一半via包围区域
     nextWavefrontGrid.addLayerPathArea((dir == frDirEnum::U) ? getHalfViaEncArea(currGrid.z(), false) : getHalfViaEncArea(gridZ, true));
   }
   //if (currGrid.getLastDir() != frDirEnum::UNKNOWN && currGrid.getLastDir() != dir) {
