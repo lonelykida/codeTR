@@ -87,9 +87,9 @@ using namespace fr;
   // vlength calculation - 初始化当前网格的V长度变量
   frCoord currVLengthX = 0;
   frCoord currVLengthY = 0;
-  //获取当前网格的垂直长度
+  //获取当前网格的VLength
   currGrid.getVLength(currVLengthX, currVLengthY);
-  //将当前网格的垂直长度赋值给下一个网格的垂直长度
+  //将当前网格的VLength赋值给下一个网格的VLength
   auto nextVLengthX = currVLengthX;
   auto nextVLengthY = currVLengthY;
   //判断当前网格的上一个via是否是向上的 - 在search中传入的时候是true
@@ -102,7 +102,7 @@ using namespace fr;
     //当前扩展方向是向下，则下一个网格的"上一个扩展方向"应该是向上
     nextIsPrevViaUp = (dir == frDirEnum::D); // up via if current path goes down
   } else {  //如果扩展方向不是向上或向下，而是其他方向
-    //如果当前网格X、Y方向的V长度不是最大值-根据移动方向增加下一个网格的垂直长度
+    //如果当前网格X、Y方向的V长度不是最大值-根据移动方向增加下一个网格的VLength
     if (currVLengthX != std::numeric_limits<frCoord>::max() &&
         currVLengthY != std::numeric_limits<frCoord>::max()) {
       if (dir == frDirEnum::W || dir == frDirEnum::E) {
@@ -502,6 +502,7 @@ void FlexGridGraph::getPrevGrid(frMIdx &gridX, frMIdx &gridY, frMIdx &gridZ, con
   return;
 }
 
+//
 /*inline*/ frCost FlexGridGraph::getNextPathCost(const FlexWavefrontGrid &currGrid, const frDirEnum &dir) {
   // bool enableOutput = true;
   bool enableOutput = false;
@@ -779,6 +780,8 @@ void FlexGridGraph::getPrevGrid(frMIdx &gridX, frMIdx &gridY, frMIdx &gridZ, con
   return nextPathCost;
 
 }
+
+
 
 //通过对当前网格的回溯缓冲区进行解码，来找到路径搜索中波前尾部的网格索引
 //接收两个参数：一个 FlexMazeIdx 类型的引用参数 currIdx，表示当前网格索引；
