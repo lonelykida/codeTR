@@ -40,7 +40,7 @@ namespace fr {    //命名空间 fr
   namespace io {  //fr - io
     class Parser;
   }
-  class frDesign {  //fr设计类
+  class frDesign {  //设计文件的类
   public:
     // constructors //无参构造
     frDesign(): topBlock(nullptr)/*给topBlock赋值为NULL*/, tech(std::make_unique<frTechObject>()),/*初始化tech指针*/ 

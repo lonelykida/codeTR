@@ -32,6 +32,7 @@
 #include "frBaseTypes.h"
 
 namespace fr {
+  //方向类，存储方向信息
   class frOrient {
   public:
     // constructor
@@ -132,6 +133,8 @@ namespace fr {
     //frOrientEnum operator()() const {
     //  return orient;
     //}
+
+    //获得方向枚举
     operator frOrientEnum() const {
       return orient;
     }

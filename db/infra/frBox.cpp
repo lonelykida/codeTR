@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2019, The Regents of the University of California
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of the University nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,33 +32,44 @@
 using namespace std;
 using namespace fr;
 
-void frBox::transform(const frTransform &xform) {
-  //auto ll = bBox.lowerLeft.transform(xform);
-  //ll.transform(xform);
-  //auto ur = bBox.upperRight.transform(xform);
-  //ur.transform(xform);
-  //this->set(ll, ur);
-  ll.transform(xform);
-  ur.transform(xform);
-  this->set(ll, ur);
+// 偏移盒子
+void frBox::transform(const frTransform &xform)
+{
+    // auto ll = bBox.lowerLeft.transform(xform);
+    // ll.transform(xform);
+    // auto ur = bBox.upperRight.transform(xform);
+    // ur.transform(xform);
+    // this->set(ll, ur);
+    
+    //transform里保存了偏移和方向 - 根据这个方向和偏移来计算盒子的左下和右上点
+    ll.transform(xform);
+    ur.transform(xform);
+    this->set(ll, ur);  //调用set函数设置盒子的左下和右上点
 }
 
-bool frBox::overlaps(const frBox &boxIn, bool incEdges) const {
-  if (incEdges) {
-    return !(right() < boxIn.left()   || // left
-             top()   < boxIn.bottom() || // bottom
-             left()  > boxIn.right()  || // right
-             bottom()> boxIn.top()        // top
-             );
-  } else {
-    return !(right() <= boxIn.left()   || // left
-             top()   <= boxIn.bottom() || // bottom
-             left()  >= boxIn.right()  || // right
-             bottom()>= boxIn.top()        // top
-             );
-  }
+// 判断盒子是否重叠
+bool frBox::overlaps(const frBox &boxIn, bool incEdges) const
+{
+    if (incEdges)
+    {
+        return !(right() < boxIn.left() || // left
+                 top() < boxIn.bottom() || // bottom
+                 left() > boxIn.right() || // right
+                 bottom() > boxIn.top()    // top
+        );
+    }
+    else
+    {
+        return !(right() <= boxIn.left() || // left
+                 top() <= boxIn.bottom() || // bottom
+                 left() >= boxIn.right() || // right
+                 bottom() >= boxIn.top()    // top
+        );
+    }
 }
 
-void frBox::bloat(const frCoord distance, frBox &boxOut) const {
-  boxOut.set(left() - distance, bottom() - distance, right() + distance, top() + distance);
+// 扩大盒子
+void frBox::bloat(const frCoord distance, frBox &boxOut) const
+{
+    boxOut.set(left() - distance, bottom() - distance, right() + distance, top() + distance);
 }

@@ -27,13 +27,16 @@
  */
 
 #include "ta/FlexTA.h"
-
+#include "dr/FlexDR_init.cpp"
 using namespace std;
 using namespace fr;
+
+
 
 void FlexTAWorker::initTracks() {
   //bool enableOutput = true;
   bool enableOutput = false;
+  nets.clear();
   //tracks.clear();
   //tracks.resize(getDesign()->getTech()->getLayers().size());
   trackLocs.clear();

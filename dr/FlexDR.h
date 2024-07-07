@@ -257,7 +257,9 @@ namespace fr {
   class FlexGCWorker;
   class FlexDRWorker {
   public:
+    //友元
     // constructors
+    
     FlexDRWorker(FlexDR* drIn): 
                  design(drIn->getDesign()), dr(drIn), routeBox(), extBox(), drcBox(), drIter(0), mazeEndIter(1), 
                  TEST(false), DRCTEST(false), QUICKDRCTEST(false), enableDRC(true), 
@@ -268,6 +270,12 @@ namespace fr {
                  apSVia(), fixedObjs(), planarHistoryMarkers(), viaHistoryMarkers(), 
                  historyMarkers(std::vector<std::set<FlexMazeIdx> >(3)),
                  nets(), owner2nets(), owner2pins(), gridGraph(drIn->getDesign(), this), markers(), rq(this), gcWorker(nullptr) /*, drcWorker(drIn->getDesign())*/ {}
+    friend class FlexTAWorker;
+
+    std::vector<std::unique_ptr<drNet> >& myGetNets(void){
+      return nets;
+    }
+
     // setters
     void setRouteBox(const frBox &boxIn) {
       routeBox.set(boxIn);
@@ -477,6 +485,7 @@ namespace fr {
     int getInitNumMarkers() const {
       return initNumMarkers;
     }
+    //返回标记队列的大小
     int getNumMarkers() const {
       return markers.size();
     }
@@ -493,11 +502,13 @@ namespace fr {
     // others
     int getNumQuickMarkers();
     
+  
+
   protected:
     frDesign* design;
     FlexDR*   dr;
     frBox     routeBox;
-    frBox     extBox;
+    frBox     extBox; //外部的盒子
     frBox     drcBox;
     int       drIter;
     int       mazeEndIter;
@@ -531,7 +542,7 @@ namespace fr {
     std::map<frNet*, std::vector<std::pair<frBlockObject*, std::pair<frMIdx, frBox> > > > owner2pins;
     FlexGridGraph                           gridGraph;
     //std::vector<std::unique_ptr<frMarker> > markers;
-    std::vector<frMarker>                   markers;
+    std::vector<frMarker>                   markers;  //标记队列
     std::vector<frMarker>                   bestMarkers;
     FlexDRWorkerRegionQuery                 rq;
 

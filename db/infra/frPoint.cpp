@@ -32,6 +32,7 @@
 using namespace std;
 using namespace fr;
 
+//用于盒子的偏移 - xform类中有"方向"和"便宜"两个变量
 void frPoint::transform(const frTransform &xform) {
   frCoord tmpX = 0;
   frCoord tmpY = 0;

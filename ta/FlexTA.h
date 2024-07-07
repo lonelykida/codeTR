@@ -37,6 +37,7 @@
 //#include "db/taObj/taTrack.h"
 #include "db/taObj/taPin.h"
 #include <set>
+#include "FlexDR.h"
 
 //#include <boost/icl/interval_map.hpp>
 //#include <boost/pool/pool_alloc.hpp>
@@ -169,6 +170,11 @@ namespace fr {
 
   class FlexTAWorker {
   public:
+  
+    std::vector<std::unique_ptr<drNet> > taNets = 
+    FlexDRWorker::myGetNets();
+      
+
     // constructors
     FlexTAWorker(frDesign* designIn): design(designIn), rq(this), numAssigned(0), totCost(0), maxRetry(1)/*, totDrcCost(0)*/ {};
     // setters
@@ -268,6 +274,9 @@ namespace fr {
     frPrefRoutingDirEnum               dir;
     int                                taIter;
     FlexTAWorkerRegionQuery            rq;
+
+    // // std::vector<std::unique_ptr<drNet> >    nets; //自定义线网
+
 
     //std::vector<frGuide*>            guides;
     std::vector<std::unique_ptr<taPin> > iroutes; // unsorterd iroutes

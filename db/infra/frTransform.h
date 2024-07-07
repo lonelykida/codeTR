@@ -33,6 +33,7 @@
 #include "db/infra/frOrient.h"
 
 namespace fr {
+  //保存"偏移点"和"方向"-并且可以对"偏移点"和"方向"进行修改
   class frTransform {
   public:
     // constructor
@@ -40,34 +41,43 @@ namespace fr {
     frTransform(const frPoint &pointIn, const frOrient &orientIn = frOrient(frcR0)): offset(pointIn), ori(orientIn) {}
     frTransform(frCoord xOffsetIn, frCoord yOffsetIn, const frOrient &orientIn = frOrient(frcR0)): offset(xOffsetIn, yOffsetIn), ori(orientIn) {}
     // setters
+    //设置偏移点
     void set(const frPoint &pointIn) {
       offset = pointIn;
     }
+    //设置方向
     void set(const frOrient &orientIn) {
       ori = orientIn;
     }
+    //设置偏移点和方向 - 传入的是 frPoint 和 frOrient
     void set(const frPoint &pointIn, const frOrient &orientIn) {
       set(pointIn);
       set(orientIn);
     }
+    //设置偏移点和方向 - 传入的是值
     void set(frCoord xOffsetIn, frCoord yOffsetIn) {
       set(frPoint(xOffsetIn, yOffsetIn));
     }
+    //设置偏移点和方向
     void set(frCoord xOffsetIn, frCoord yOffsetIn, const frOrient &orientIn) {
       set(xOffsetIn, yOffsetIn);
       set(orientIn);
     }
     // getters
+    //获取偏移点的x坐标
     frCoord xOffset() const {
       return offset.x();
     }
+    //获取偏移点的y坐标
     frCoord yOffset() const {
       return offset.y();
     }
+    //获取方向
     frOrient orient() const {
       return ori;
     }
     // util
+    //更新偏移点的x和y
     void updateXform(frPoint &size) {
       switch(orient()) {
         //case frcR0: == default
@@ -97,6 +107,7 @@ namespace fr {
           break;
       }
     }
+    //回滚偏移
     void revert(frTransform &transformIn) {
       frCoord resXOffset, resYOffset;
       frOrient resOrient;

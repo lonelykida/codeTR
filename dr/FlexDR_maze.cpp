@@ -2848,6 +2848,8 @@ void FlexDRWorker::route_queue_main(deque<pair<frBlockObject*, pair<bool, int> >
 }
 
 
+/*
+
 // void FlexDRWorker::route_queue_main(deque<pair<drNet*, int> > &rerouteNets,
 //                                     FlexGCWorker *gcWorker) {
 //   auto &workerRegionQuery = getWorkerRegionQuery();
@@ -3033,6 +3035,9 @@ void FlexDRWorker::route_queue_main(deque<pair<frBlockObject*, pair<bool, int> >
 //   }
 // }
 
+
+*/
+
 void FlexDRWorker::route() {
   //bool enableOutput = true;
   bool enableOutput = false;// 控制是否输出调试信息的标志，这里默认关闭
@@ -3040,6 +3045,7 @@ void FlexDRWorker::route() {
     cout << "start Maze route #nets = " <<nets.size() <<endl;// 如果开启输出，打印开始布线的信息
   }
   // 如果不在测试模式且启用了DRC且ripup模式为0且初始标记数为0，则直接返回
+  // DRCTEST默认传入false
   if (!DRCTEST && isEnableDRC() && getRipupMode() == 0 && getInitNumMarkers() == 0) {
     return;
   }
@@ -3069,6 +3075,7 @@ void FlexDRWorker::route() {
     //                                 <<time_span2.count() <<" "
     //                                 <<endl;
     //cout <<ss.str() <<flush;
+    
     FlexGCWorker gcWorker(getDesign(), this);  // 创建一个几何约束工作器实例
     gcWorker.setExtBox(getExtBox());  // 设置外部框
     gcWorker.setDrcBox(getDrcBox());  // 设置DRC检查框
@@ -3080,6 +3087,7 @@ void FlexDRWorker::route() {
     // drcWorker.main();
     gcWorker.end();// 结束几何约束工作器的任务
     setMarkers(gcWorker.getMarkers()); // 设置标记
+
     high_resolution_clock::time_point t3x = high_resolution_clock::now();
     //drcWorker.report();
     // 计算和打印时间间隔
@@ -3088,6 +3096,7 @@ void FlexDRWorker::route() {
     duration<double> time_span1x = duration_cast<duration<double>>(t2x - t1x);
 
     duration<double> time_span2x = duration_cast<duration<double>>(t3x - t2x);
+    
     if (VERBOSE > 1) {
       stringstream ss;
       ss   <<"GC  (INIT/MAIN/END) "   <<time_span0x.count() <<" " 

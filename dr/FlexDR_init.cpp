@@ -4076,7 +4076,7 @@ void FlexDRWorker::route_queue_init_queue(deque<pair<frBlockObject*, pair<bool, 
     for (auto &net: nets) {// 将所有网络添加到撕裂队列
       ripupNets.push_back(net.get());//第六行？
     }
-
+    
     // sort nets
     mazeIterInit_sortRerouteNets(0, ripupNets);// 对网络进行排序，优先处理需要重新布线的网络。
     // if (routeBox.left() == 462000 && routeBox.bottom() == 81100) {

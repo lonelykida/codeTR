@@ -67,6 +67,7 @@ namespace fr {
   class drNet;
   // class drShape;
   // class drPatchWire;
+  
   // 图形约束工作器
   class FlexGCWorker {
   public:
@@ -199,8 +200,8 @@ namespace fr {
     frDesign*                            design;
     FlexDRWorker*                        drWorker;
 
-    frBox                                extBox;
-    frBox                                drcBox;
+    frBox                                extBox;  //外部框
+    frBox                                drcBox;  //drc框
 
     std::map<frBlockObject*, gcNet*>     owner2nets; // no order is assumed
     std::vector<std::unique_ptr<gcNet> > nets;

@@ -68,10 +68,10 @@ namespace fr {    //命名空间fr
   //  return &(*a) < &(*b);
   //};
   enum frOrientEnum {   //这是一个方向枚举
-      frcR0       = 0, // N
-      frcR90      = 1, // W
-      frcR180     = 2, // S
-      frcR270     = 3, // E
+      frcR0       = 0, // N - 北
+      frcR90      = 1, // W - 西
+      frcR180     = 2, // S - 南
+      frcR270     = 3, // E - 东
       frcMY       = 4, // FN
       frcMXR90    = 5, // FW
       frcMX       = 6, // FS

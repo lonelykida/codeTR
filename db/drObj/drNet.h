@@ -115,7 +115,7 @@ namespace fr {
       return origGuides;
     }
 
-    // setters
+    // setters - 设置器
     void addPin(std::unique_ptr<drPin> &pinIn) {
       pinIn->setNet(this);
       //pinIn->setId(pins.size());
