@@ -623,6 +623,7 @@ void FlexGridGraph::initTracks(map<frCoord, map<frLayerNum, frTrackPattern* > > 
   }
 }
 
+//重置网格图状态 - 属于mazeNetInit()
 void FlexGridGraph::resetStatus() {
   //frMIdx xDim, yDim, zDim;
   //getDim(xDim, yDim, zDim);

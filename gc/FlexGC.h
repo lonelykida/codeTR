@@ -67,18 +67,21 @@ namespace fr {
   class drNet;
   // class drShape;
   // class drPatchWire;
+  // 图形约束工作器
   class FlexGCWorker {
   public:
-    // constructors
+    // constructors - 构造器
     FlexGCWorker(frDesign* designIn, FlexDRWorker* drWorkerIn = nullptr): design(designIn), drWorker(drWorkerIn), 
                  extBox(), drcBox(), owner2nets(), nets(), markers(), mapMarkers(), pwires(), rq(this), printMarker(false), modifiedDRNets(),
                  modifiedOwners(), modifiedOwnersSet(),
                  targetNet(nullptr), minLayerNum(std::numeric_limits<frLayerNum>::min()), maxLayerNum(std::numeric_limits<frLayerNum>::max()),
                  targetObj(nullptr), ignoreDB(false), ignoreMinArea(false), surgicalFixEnabled(false) {}
-    // setters
+    // setters - 设置器
+    //设置外部box
     void setExtBox(const frBox &in) {
       extBox.set(in);
     }
+    //设置DRC检查box
     void setDrcBox(const frBox &in) {
       drcBox.set(in);
     }
