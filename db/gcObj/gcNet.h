@@ -77,6 +77,7 @@ namespace fr {
       pin->setId(pins[layerNum].size());
       pins[layerNum].push_back(std::move(pin));
     }
+    //设置owner
     void setOwner(frBlockObject* in) {
       owner = in;
     }

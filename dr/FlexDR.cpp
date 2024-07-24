@@ -235,11 +235,11 @@ void FlexDR::initGCell2BoundaryPin()
     gcell2BoundaryPin = vector<vector<map<frNet *, set<pair<frPoint, frLayerNum>>, frBlockObjectComp>>>((int)xgp.getCount(), tmpVec);
     // 遍历所有网络和其引导线 - 将其添加到gcell2BoundaryPin中
     for (auto &net : getDesign()->getTopBlock()->getNets())
-    {   //遍历所有线网
-        auto netPtr = net.get();    // 获取线网指针
-        for (auto &guide : net->getGuides())    //遍历所有guide
+    {                                        // 遍历所有线网
+        auto netPtr = net.get();             // 获取线网指针
+        for (auto &guide : net->getGuides()) // 遍历所有guide
         {
-            for (auto &connFig : guide->getRoutes())    //遍历所有连接图形
+            for (auto &connFig : guide->getRoutes()) // 遍历所有连接图形
             {
                 if (connFig->typeId() == frcPathSeg)
                 { // 如果连接图元是路径段
@@ -1802,7 +1802,7 @@ map<frNet *, set<pair<frPoint, frLayerNum>>, frBlockObjectComp> FlexDR::initDR_m
             for (auto &[net, s] : currBp)
             { // 遍历当前网格单元的边界pin集合
                 for (auto &[pt, lNum] : s)
-                {   // 遍历边界pin集合中的每个位置和层号
+                { // 遍历边界pin集合中的每个位置和层号
                     // 如果位置位于布线框的边界上，则加入到返回的边界pin中
                     if (pt.x() == routeBox.left() || pt.x() == routeBox.right() ||
                         pt.y() == routeBox.bottom() || pt.y() == routeBox.top())
@@ -2233,7 +2233,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
     auto &ygp = gCellPatterns.at(1);
     int numQuickMarkers = 0;
     int clipSize = size; // 用于计算每个处理区块的大小
-    int cnt = 0;
+    int cnt = 0;s
     // 计算总的迭代次数
     int tot = (((int)xgp.getCount() - 1 - offset) / clipSize + 1) * (((int)ygp.getCount() - 1 - offset) / clipSize + 1);
     int prev_perc = 0; // 上一次迭代进度百分比
@@ -2900,7 +2900,7 @@ int FlexDR::main()
     //  followGuide：是否遵循布线指南。11
     //  fixMode：修复模式。 12
     //  TEST：是否为测试模式。13
-    //                   1            2   3  4   5        6                 7  8   9    10  11   12
+    //                   1           2  3  4   5        6                 7  8   9    10  11   12
     searchRepair(iterNum++ /*  0 */, 7, 0, 3, DRCCOST, 0 /*MAARKERCOST*/, 0, 0, true, 2, true, 9); // true search and repair
     // int i=0;
     // cout<<i++<<endl;

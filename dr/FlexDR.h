@@ -344,13 +344,14 @@ namespace fr {
         }
       }
     }
+    //设置标记
     void setMarkers(const std::vector<std::unique_ptr<frMarker> > &in) {
       markers.clear();
-      frBox box;
+      frBox box;  //边界框
       for (auto &uMarker: in) {
         auto &marker = *uMarker;
-        marker.getBBox(box);
-        if (getDrcBox().overlaps(box)) {
+        marker.getBBox(box);  //获取标记的边界框
+        if (getDrcBox().overlaps(box)) {  //判断标记是否在drc边界框内,如果是则加入标记集合
           markers.push_back(marker);
         }
       }

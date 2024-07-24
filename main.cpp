@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
   router.main();    //执行main命令
   
   high_resolution_clock::time_point t2 = high_resolution_clock::now();      //输出总执行时间
-  duration<double> time_span = duration_cast<duration<double>>(t2 - t101)0;
+  duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
   if (VERBOSE > 0) {
     cout <<endl <<"Runtime taken (hrt): " << time_span.count()    <<endl;
   }

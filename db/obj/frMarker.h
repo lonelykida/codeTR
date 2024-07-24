@@ -139,10 +139,10 @@ namespace fr
         {
             return srcs;
         }
-        // 获取非const srcs
+        // 获取非const srcs(其实就是net)
         std::set<frBlockObject *> &getSrcs()
         {
-            return srcs;
+            return srcs;    
         }
 
         // const std::set<int>& getSrcIds() const {
