@@ -100,6 +100,7 @@ int FlexDRWorker::main()
     return 0;
 }
 
+//布线的主线程
 int FlexDRWorker::main_mt()
 {
     using namespace std::chrono;
@@ -2386,7 +2387,10 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
 
         int xIdx = 0, yIdx = 0;
         // 遍历所有布线区域
-
+        // 每次迭代将设计划分成不重叠的每个大小都是200x200GCell尺寸的片(clip)，并为每个片创
+        // 建一个GR工作者以执行两次inner拆线重布，以解决溢出问题。
+        // 以0,-70和-150GCells的偏移量在不同迭代中移动片以实现对片边界的优化。
+        // 下边的这一大坨for的作用就是将整个布线区域的每个worker都搞出来，放到workers里边
         for (int i = offset; i < (int)xgp.getCount(); i += clipSize)
         {
             for (int j = offset; j < (int)ygp.getCount(); j += clipSize)
@@ -2423,11 +2427,12 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
                     auto bp = initDR_mergeBoundaryPin(i, j, size, routeBox);
                     worker->setDRIter(0, bp);
                 }
-                worker->setEnableDRC(enableDRC);
-                worker->setRipupMode(ripupMode);
-                worker->setFollowGuide(followGuide);
+                worker->setEnableDRC(enableDRC);    // 设置是否启用DRC
+                worker->setRipupMode(ripupMode);    // 设置Ripup模式
+                worker->setFollowGuide(followGuide);// 设置是否遵循Guide
                 // worker->setNetOrderingMode(netOrderingMode);
-                worker->setFixMode(fixMode);
+                worker->setFixMode(fixMode);        // 设置Fix模式
+                //设置FlexDRWorker对象的成本参数 - DRC成本，标记成本，标记膨胀宽度，标记膨胀深度
                 worker->setCost(workerDRCCost, workerMarkerCost, workerMarkerBloatWidth, workerMarkerBloatDepth);
                 // 将FlexDRWorker对象放入对应的批次中
                 int batchIdx = (xIdx % batchStepX) * batchStepY + yIdx % batchStepY;
@@ -2444,7 +2449,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         }
 
         // 设置并行线程数
-        omp_set_num_threads(MAX_THREADS);
+        omp_set_num_threads(MAX_THREADS);   //定义里此处为1
         // if (iter >= 2) {
         //   omp_set_num_threads(1);
         // }
@@ -2453,15 +2458,17 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         // parallel execution
 
         // vector<vector<vector<unique_ptr<FlexDRWorker> > > > workers(batchStepX * batchStepY);
+        //对三维数组workers里的每一批worker
         for (auto &workerBatch : workers)
         {
+            //对每一批中的worker
             for (auto &workersInBatch : workerBatch)
             {
 // multi thread
 #pragma omp parallel for schedule(dynamic)
                 for (int i = 0; i < (int)workersInBatch.size(); i++)
                 {
-                    workersInBatch[i]->main_mt();
+                    workersInBatch[i]->main_mt();   //对该批中的每一个worerk，执行布线主线程
 #pragma omp critical // 计算并输出进度信息
                     {
                         cnt++;
