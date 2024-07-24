@@ -2386,6 +2386,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
 
         int xIdx = 0, yIdx = 0;
         // 遍历所有布线区域
+
         for (int i = offset; i < (int)xgp.getCount(); i += clipSize)
         {
             for (int j = offset; j < (int)ygp.getCount(); j += clipSize)
@@ -2399,18 +2400,21 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
                 getDesign()->getTopBlock()->getGCellBox(frPoint(min((int)xgp.getCount() - 1, i + clipSize - 1),
                                                                 min((int)ygp.getCount(), j + clipSize - 1)),
                                                         routeBox2);
+                //当前轮次布线的区域routeBox
                 frBox routeBox(routeBox1.left(), routeBox1.bottom(), routeBox2.right(), routeBox2.top());
+                //扩展框，比布线区域大一些
                 frBox extBox;
+                //drc检查框，比扩展框大一些
                 frBox drcBox;
                 // 设置各种参数
-                routeBox.bloat(MTSAFEDIST, extBox);
-                routeBox.bloat(DRCSAFEDIST, drcBox);
-                worker->setRouteBox(routeBox);
-                worker->setExtBox(extBox);
-                worker->setDrcBox(drcBox);
-                worker->setMazeEndIter(mazeEndIter);
-                worker->setDRIter(iter);
-                if (!iter)
+                routeBox.bloat(MTSAFEDIST, extBox); //(2000,extBox)-bloat - 膨胀
+                routeBox.bloat(DRCSAFEDIST, drcBox);//(500,drcBox) - 
+                worker->setRouteBox(routeBox);  // 设置布线区域为routeBox
+                worker->setExtBox(extBox);      // 设置扩展框
+                worker->setDrcBox(drcBox);      // 设置drc检查框
+                worker->setMazeEndIter(mazeEndIter);    // 设置迷宫迭代次数
+                worker->setDRIter(iter);        // 设置DR的当前迭代次数
+                if (!iter)  //如果是第一次布线
                 {
                     // if (routeBox.left() == 441000 && routeBox.bottom() == 816100) {
                     //   cout << "@@@ debug: " << i << " " << j << endl;
