@@ -2303,6 +2303,7 @@ void FlexDRWorker::route_2_init(deque<drNet *> &rerouteNets)
     }
 }
 
+//迷宫线网初始化
 void FlexDRWorker::mazeNetInit(drNet *net)
 {
     gridGraph.resetStatus(); // 重置网格图状态，准备新的布线尝试
@@ -3083,6 +3084,7 @@ void FlexDRWorker::route_queue()
     }
     setBestMarkers();
 }
+
 // 整个过程是控制布线队列处理的逻辑，从而完成电路设计的重新布线任务。
 void FlexDRWorker::route_queue_main(deque<pair<frBlockObject *, pair<bool, int>>> &rerouteQueue)
 {
@@ -3104,7 +3106,7 @@ void FlexDRWorker::route_queue_main(deque<pair<frBlockObject *, pair<bool, int>>
 
         if (obj->typeId() == drcNet && doRoute)
         { // 仅当对象是网络且需要布线时才进行处理
-            auto net = static_cast<drNet *>(obj);
+            auto net = static_cast<drNet *>(obj);   //将右值转换为左值对象
             if (numReroute != net->getNumReroutes())
             { // 如果重布线计数与网络的计数不匹配则跳过布线
                 // isRouteSkipped = true;
@@ -3129,7 +3131,7 @@ void FlexDRWorker::route_queue_main(deque<pair<frBlockObject *, pair<bool, int>>
             // see route_queue_init_queue RESERVE_VIA_ACCESS
             // this is unreserve via
             // via is reserved only when drWorker starts from nothing and via is reserved
-            // 如果需要，处理特殊情况，可能会解除通过位置的保留
+            // 如果需要，处理特殊情况，可能会解除通孔位置的保留
             if (RESERVE_VIA_ACCESS && net->getNumReroutes() == 0 && (getRipupMode() == 1 || getRipupMode() == 2))
             {
                 initMazeCost_via_helper(net, false);
@@ -3137,7 +3139,7 @@ void FlexDRWorker::route_queue_main(deque<pair<frBlockObject *, pair<bool, int>>
             net->clear(); // 清除现有的布线数据，为新的布线做准备
 
             // route
-            mazeNetInit(net); // 通过迷宫路由器对网络进行布线
+            mazeNetInit(net); // 通过迷宫路由器对网络进行布线，先初始化
             bool isRouted = routeNet(net);
             if (isRouted == false)
             {
@@ -3786,6 +3788,7 @@ void FlexDRWorker::routeNet_prep(drNet *net, set<drPin *, frBlockObjectComp> &un
         }
     }
 }
+
 // 该函数 routeNet_setSrc 主要用于选择源引脚并初始化连接组件。这是在详细布线过程中，设置起始点为布线算法的准备步骤。
 void FlexDRWorker::routeNet_setSrc(set<drPin *, frBlockObjectComp> &unConnPins,
                                    map<FlexMazeIdx, set<drPin *, frBlockObjectComp>> &mazeIdx2unConnPins,
@@ -3933,13 +3936,14 @@ void FlexDRWorker::routeNet_setSrc(set<drPin *, frBlockObjectComp> &unConnPins,
         ccMazeIdx2.set(max(ccMazeIdx2.x(), mi.x()), // 更新连接组件的最大范围索引
                        max(ccMazeIdx2.y(), mi.y()),
                        max(ccMazeIdx2.z(), mi.z()));
+        //it = set<fr::drPin * , fr:: frBlockObjectComp>
         auto it = mazeIdx2unConnPins.find(mi); // 查找当前迷宫索引在未连接引脚的映射中的位置
-        if (it == mazeIdx2unConnPins.end())
+        if (it == mazeIdx2unConnPins.end()) // 如果未找到，继续下一循环
         {
             continue;
         }
         auto it2 = it->second.find(currPin); // 在未连接引脚集合中查找当前引脚
-        if (it2 == it->second.end())
+        if (it2 == it->second.end())        // 如果未找到，继续下一循环
         {
             continue;
         }
@@ -3974,7 +3978,7 @@ drPin *FlexDRWorker::routeNet_getNextDst(FlexMazeIdx &ccMazeIdx1, FlexMazeIdx &c
     //   }
     // }
     // 如果之前的代码段（被注释掉的部分）没有找到合适的目标引脚
-    if (!nextDst)
+    if (!nextDst)   // 如果目标引脚为NULL
         for (auto &[mazeIdx, setS] : mazeIdx2unConnPins)
         {                                                               // 遍历所有未连接引脚的迷宫索引和对应的引脚集合
             gridGraph.getPoint(pt, mazeIdx.x(), mazeIdx.y());           // 获取当前迷宫索引对应的点坐标。
@@ -3983,12 +3987,13 @@ drPin *FlexDRWorker::routeNet_getNextDst(FlexMazeIdx &ccMazeIdx1, FlexMazeIdx &c
             frCoord dz = max(max(gridGraph.getZHeight(ccMazeIdx1.z()) - gridGraph.getZHeight(mazeIdx.z()),
                                  gridGraph.getZHeight(mazeIdx.z()) - gridGraph.getZHeight(ccMazeIdx2.z())),
                              0); // 计算z方向的高度差。
-                                 // if (DBPROCESSNODE == "GF14_13M_3Mx_2Cx_4Kx_2Hx_2Gx_LB") {
-                                 //   if (dx + MISALIGNMENTCOST * dy + dz < currDist) {
-                                 //     currDist = dx + MISALIGNMENTCOST * dy + dz;
-                                 //     nextDst = *(setS.begin());
-                                 //   }
-                                 // } else {
+            
+            // if (DBPROCESSNODE == "GF14_13M_3Mx_2Cx_4Kx_2Hx_2Gx_LB") {
+            //   if (dx + MISALIGNMENTCOST * dy + dz < currDist) {
+            //     currDist = dx + MISALIGNMENTCOST * dy + dz;
+            //     nextDst = *(setS.begin());
+            //   }
+            // } else {
             if (dx + dy + dz < currDist)
             {                              // 如果当前引脚到边界框的总距离小于已知的最小距离
                 currDist = dx + dy + dz;   // 更新最小距离
@@ -4433,10 +4438,10 @@ bool FlexDRWorker::routeNet(drNet *net)
         cout << "route " << net->getFrNet()->getName() << endl;
     }
     // 准备未连接引脚集合和它们在迷宫中的索引
-    set<drPin *, frBlockObjectComp> unConnPins;
-    map<FlexMazeIdx, set<drPin *, frBlockObjectComp>> mazeIdx2unConnPins;
-    set<FlexMazeIdx> apMazeIdx;
-    set<FlexMazeIdx> realPinAPMazeIdx; //
+    set<drPin *, frBlockObjectComp> unConnPins; //未连接引脚集合
+    map<FlexMazeIdx, set<drPin *, frBlockObjectComp>> mazeIdx2unConnPins;   //迷宫布线索引到未连接引脚的映射
+    set<FlexMazeIdx> apMazeIdx; // 访问模式的迷宫索引
+    set<FlexMazeIdx> realPinAPMazeIdx; // 实际引脚访问模式的迷宫索引
     // map<FlexMazeIdx, frViaDef*> apSVia;// 进行布线准备，包括设置未连接引脚集合等
     routeNet_prep(net, unConnPins, mazeIdx2unConnPins, apMazeIdx, realPinAPMazeIdx /*, apSVia*/);
     // prep for area map
@@ -4446,18 +4451,20 @@ bool FlexDRWorker::routeNet(drNet *net)
         routeNet_prepAreaMap(net, areaMap);
     }
     // 存储连接组件的左下和右上迷宫索引，以及中心点
+    //Idx1 - 最大范围索引 , Idx2 - 最小范围索引
     FlexMazeIdx ccMazeIdx1, ccMazeIdx2; // connComps ll, ur flexmazeidx
     frPoint centerPt;
-    vector<FlexMazeIdx> connComps;
-    routeNet_setSrc(unConnPins, mazeIdx2unConnPins, connComps, ccMazeIdx1, ccMazeIdx2, centerPt); // 设置源引脚和更新连接组件信息
+    vector<FlexMazeIdx> connComps;  //相连的组件
                                                                                                   // 存储路径
+    routeNet_setSrc(unConnPins, mazeIdx2unConnPins, connComps, ccMazeIdx1, ccMazeIdx2, centerPt); // 设置源引脚和更新连接组件信息
     vector<FlexMazeIdx> path;                                                                     // astar must return with >= 1 idx
-    bool isFirstConn = true;
+    bool isFirstConn = true;        //第一次连接 - 初始化为true
     while (!unConnPins.empty())
     { // 当还有未连接的引脚时
+        //1.先找该区域第一个待连接的引脚
         auto nextPin = routeNet_getNextDst(ccMazeIdx1, ccMazeIdx2, mazeIdx2unConnPins);
-        mazePinInit(); // 初始化迷宫引脚
-        path.clear();
+        mazePinInit(); // 初始化迷宫布线的引脚成本和每个结点的前驱
+        path.clear();  //清空当前path路径矩阵，为当前pin的寻路做好准备
         // if (nextPin->hasFrTerm()) {
         //   if (nextPin->getFrTerm()->typeId() == frcTerm) {
         //     cout << "next pin (frTermName) = " << ((frTerm*)nextPin->getFrTerm())->getName() << "\n";

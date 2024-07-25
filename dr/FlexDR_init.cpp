@@ -4105,6 +4105,7 @@ void FlexDRWorker::route_queue_init_queue(deque<pair<frBlockObject*, pair<bool, 
   }
   route_queue_update_queue(checks, routes, rerouteQueue);// 根据收集到的检查和路由对象更新重新布线队列。
 }
+
 //目的是更新重布线队列，将需要检查和需要重新布线的设计对象添加到队列中，以便后续处理。
 void FlexDRWorker::route_queue_update_queue(const vector<pair<frBlockObject*, pair<bool, int> > > &checks,
                                             const vector<pair<frBlockObject*, pair<bool, int> > > &routes,

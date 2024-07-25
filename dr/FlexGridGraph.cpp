@@ -649,7 +649,7 @@ void FlexGridGraph::resetSrc() {
 void FlexGridGraph::resetDst() {
   dsts.assign(dsts.size(), 0);
 }
-//重置A*的算法成本
+//重置A*的算法成本 - 设为UINT_MAX
 void FlexGridGraph::resetAStarCosts() {
   astarCosts.assign(astarCosts.size(), UINT_MAX);
 }
