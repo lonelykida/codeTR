@@ -54,7 +54,7 @@ namespace fr {
       set(pointIn);
       set(orientIn);
     }
-    //设置偏移点和方向 - 传入的是值
+    //设置偏移点 - 传入的是两个x，y坐标
     void set(frCoord xOffsetIn, frCoord yOffsetIn) {
       set(frPoint(xOffsetIn, yOffsetIn));
     }

@@ -1960,7 +1960,7 @@ void FlexDRWorker::subPathCost(drConnFig *connFig)
 // 用于迭代初始化和根据特定规则对需要重新路由的网络进行排序的函数
 bool FlexDRWorker::mazeIterInit_sortRerouteNets(int mazeIter, vector<drNet *> &rerouteNets)
 {
-    // 定义第一种排序比较器，根据网络的引脚数量和占据区域大小进行比较
+    // 定义第一种排序比较器，根据网络的引脚数量和占据区域大小进行比较 - 升序
     auto rerouteNetsComp1 = [](drNet *const &a, drNet *const &b)
     {
         frBox boxA, boxB;
@@ -1970,16 +1970,16 @@ bool FlexDRWorker::mazeIterInit_sortRerouteNets(int mazeIter, vector<drNet *> &r
         auto areaB = (boxB.right() - boxB.left()) * (boxB.top() - boxB.bottom());
         // auto areaA = (boxA.right() - boxA.left()) + (boxA.top() - boxA.bottom());
         // auto areaB = (boxB.right() - boxB.left()) + (boxB.top() - boxB.bottom());
-        //  根据引脚数和面积来排序，如果引脚数相同，则比较面积，如果面积也相同，比较ID
+        //  根据引脚数和面积来排序，如果引脚数相同，则比较面积，如果面积也相同，比较ID，引脚从小到大，面积从小到达，ID从小到大
         return (a->getNumPinsIn() == b->getNumPinsIn() ? (areaA == areaB ? a->getId() < b->getId() : areaA < areaB) : a->getNumPinsIn() < b->getNumPinsIn());
         // return (areaA == areaB ? a->getId() < b->getId() : areaA > areaB);
     };
-    // 定义第二种排序比较器，根据网络的标记距离进行比较
+    // 定义第二种排序比较器，根据网络的标记距离进行比较，标记距离相同则比较ID，都是从小到大
     auto rerouteNetsComp2 = [](drNet *const &a, drNet *const &b)
     {
         return (a->getMarkerDist() == b->getMarkerDist() ? a->getId() < b->getId() : a->getMarkerDist() < b->getMarkerDist());
     };
-    // 定义第三种排序比较器，组合了引脚数、面积以及标记距离的比较
+    // 定义第三种排序比较器，组合了引脚数、面积以及标记距离的比较-若标记距离同则比较引脚数，若引脚数同则比较面积，若面积同则比较ID，皆从小到大
     auto rerouteNetsComp3 = [mazeIter](drNet *const &a, drNet *const &b)
     {
         frBox boxA, boxB;
@@ -1998,6 +1998,7 @@ bool FlexDRWorker::mazeIterInit_sortRerouteNets(int mazeIter, vector<drNet *> &r
     // sort
     if (mazeIter == 0)
     {
+        //修复模式0和9用第一种比较器，12用第二种，345用第三种
         switch (getFixMode())
         {
         case 0:
@@ -2015,12 +2016,12 @@ bool FlexDRWorker::mazeIterInit_sortRerouteNets(int mazeIter, vector<drNet *> &r
             break;
         default:;
         }
-        // to be removed// 实施基于种子的随机交换，增加排序的随机性
+        // to be removed// 实施基于种子的随机交换，增加排序的随机性 OR_SEED初始定义为-1
         if (OR_SEED != -1 && rerouteNets.size() >= 2)
         {
             uniform_int_distribution<int> distribution(0, rerouteNets.size() - 1);
             default_random_engine generator(OR_SEED);
-            int numSwap = (double)(rerouteNets.size()) * OR_K;
+            int numSwap = (double)(rerouteNets.size()) * OR_K;  //OR_K初始化定义为0
             for (int i = 0; i < numSwap; i++)
             {
                 int idx = distribution(generator);
@@ -2035,13 +2036,14 @@ bool FlexDRWorker::mazeIterInit_sortRerouteNets(int mazeIter, vector<drNet *> &r
         switch (getFixMode())
         {
         case 0:
+            //若不是第一次迭代，则按照第一种比较器进行排序-根据网络的引脚数量和占据区域大小进行比较
             sol = next_permutation(rerouteNets.begin(), rerouteNets.end(), rerouteNetsComp1);
             // shuffle(rerouteNets.begin(), rerouteNets.end(), default_random_engine(0));
             break;
-        case 1:
+        case 1://第2-3次迭代什么都不做
         case 2:
             break;
-        case 3:
+        case 3://第4-6次迭代也什么都不做
         case 4:
         case 5:
             // sol = next_permutation(rerouteNets.begin(), rerouteNets.end(), rerouteNetsComp1);
@@ -4502,6 +4504,7 @@ bool FlexDRWorker::routeNet(drNet *net)
     routeNet_postRouteAddPathCost(net);
     return true;
 }
+
 // 在路由过程后处理最小面积违规问题。当连线长度小于规定的最小面积时，需要对路径进行补丁处理以满足设计规则。
 void FlexDRWorker::routeNet_postAstarPatchMinAreaVio(drNet *net, const vector<FlexMazeIdx> &path, const map<FlexMazeIdx, frCoord> &areaMap)
 {

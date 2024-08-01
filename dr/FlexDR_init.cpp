@@ -4074,7 +4074,7 @@ void FlexDRWorker::route_queue_init_queue(deque<pair<frBlockObject*, pair<bool, 
     // nets are ripped up during initNets()
     vector<drNet*> ripupNets;
     for (auto &net: nets) {// 将所有网络添加到撕裂队列
-      ripupNets.push_back(net.get());//第六行？
+      ripupNets.push_back(net.get());
     }
     
     // sort nets

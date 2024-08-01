@@ -87,6 +87,7 @@ frLayerNum ONGRIDONLY_VIA_TOPLAYERNUM             = std::numeric_limits<frLayerN
 
 frLayerNum VIA_ACCESS_LAYERNUM = 2;
 
+//最大的迭代结束次数
 int END_ITERATION = 80;
 
 frUInt4 TAVIACOST       = 1;
@@ -99,6 +100,7 @@ frUInt4 VIACOST         = 4;
 // new cost used
 frUInt4 GRIDCOST        = 2;
 frUInt4 SHAPECOST       = 8;
+//DRCCLST被设置为8
 frUInt4 DRCCOST         = 8;
 frUInt4 MARKERCOST      = 32;
 frUInt4 MARKERBLOATWIDTH= 1;

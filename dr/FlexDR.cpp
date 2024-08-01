@@ -2234,7 +2234,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
     auto &ygp = gCellPatterns.at(1);
     int numQuickMarkers = 0;
     int clipSize = size; // 用于计算每个处理区块的大小
-    int cnt = 0;s
+    int cnt = 0;
     // 计算总的迭代次数
     int tot = (((int)xgp.getCount() - 1 - offset) / clipSize + 1) * (((int)ygp.getCount() - 1 - offset) / clipSize + 1);
     int prev_perc = 0; // 上一次迭代进度百分比
@@ -2245,7 +2245,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
              << flush; // 测试模式下的搜索和修复
         // FlexDRWorker worker(getDesign());
         FlexDRWorker worker(this); // 创建FlexDRWorker对象
-        frBox routeBox;
+        frBox routeBox; //布线盒子 - 保存布线区域
         // frCoord xl = 148.5 * 2000;
         // frCoord yl = 570 * 2000;
         // frPoint idx;
@@ -2258,12 +2258,12 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         //  routeBox.set(175*2000, 3.5*2000, 185*2000, 13.5*2000);
         //  routeBox.set(0*2000, 0*2000, 200*2000, 200*2000);
         //  routeBox.set(420*1000, 816.1*1000, 441*1000, 837.1*1000);
-        routeBox.set(441 * 1000, 816.1 * 1000, 462 * 1000, 837.1 * 1000); // 设置routebox
-        worker.setRouteBox(routeBox);
+        routeBox.set(441 * 1000, 816.1 * 1000, 462 * 1000, 837.1 * 1000); // 设置routebox的左下和右上角的x、y坐标,长宽均是21*1000的盒子
+        worker.setRouteBox(routeBox); 
         frBox extBox; // 设置边界框扩展
-        frBox drcBox;
-        routeBox.bloat(2000, extBox);
-        routeBox.bloat(500, drcBox);
+        frBox drcBox; // 设置drc边界框
+        routeBox.bloat(2000, extBox);   // 根据当前布线区域设置扩展边界框2000
+        routeBox.bloat(500, drcBox);    // 根据当前布线区域设置DRC边界框500
         worker.setRouteBox(routeBox);
         worker.setExtBox(extBox);
         worker.setDrcBox(drcBox);
@@ -2271,7 +2271,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         worker.setTest(true);
         // worker.setQuickDRCTest(true);
         // worker.setDRCTest(true);
-        worker.setDRIter(iter); // 设置DRC迭代次数和边界pin
+        worker.setDRIter(iter); // 设置DRC当前迭代次数和边界pin
         if (!iter)
         { // 如果是第一次迭代，则设置边界pin
             // set boundary pin (need to manulally calculate for test mode)
@@ -2374,7 +2374,6 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
     }
     else
     {
-        // 实现了对布线任务的并行处理
         vector<unique_ptr<FlexDRWorker>> uworkers;
         int batchStepX, batchStepY;
 

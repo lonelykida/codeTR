@@ -74,7 +74,7 @@ namespace fr
         {
             set(tmpLowerLeft.x(), tmpLowerLeft.y(), tmpUpperRight.x(), tmpUpperRight.y());
         }
-        //不安全的设置
+        //不安全的设置 - 有可能左边界在右边界的更右边
         void setUnsafe(const frPoint &tmpLowerLeft, const frPoint &tmpUpperRight)
         {
             ll.set(tmpLowerLeft);
