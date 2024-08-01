@@ -2659,14 +2659,17 @@ void FlexDRWorker::initGridGraph() {
   // gridGraph.print();
 }
 
-void FlexDRWorker::initMazeIdx_connFig(drConnFig *connFig) {
-  if (connFig->typeId() == drcPathSeg) {
-    auto obj = static_cast<drPathSeg*>(connFig);
-    frPoint bp, ep;
+void FlexDRWorker::initMazeIdx_connFig(drConnFig *connFig) {  //传入的是pin
+  if (connFig->typeId() == drcPathSeg) {  //若pin是路径段形状
+    auto obj = static_cast<drPathSeg*>(connFig);  //将pin转换为路径段形状
+    frPoint bp, ep; //获取pin形状的起点和终点
     obj->getPoints(bp, ep);
+    //只保留起点和终点在布线扩展区域内的部分
     bp.set(max(bp.x(), getExtBox().left()),  max(bp.y(), getExtBox().bottom()));
     ep.set(min(ep.x(), getExtBox().right()), min(ep.y(), getExtBox().top()));
+    //获取pin形状所在层
     auto lNum = obj->getLayerNum();
+    //要求起终点和当前层号(Z轴)都在迷宫布线的索引中，才能被迷宫布线到
     if (gridGraph.hasMazeIdx(bp, lNum) && gridGraph.hasMazeIdx(ep, lNum)) {
       FlexMazeIdx bi, ei;
       gridGraph.getMazeIdx(bi, bp, lNum);
@@ -4139,7 +4142,7 @@ void FlexDRWorker::route_queue_update_from_marker(frMarker *marker,
 
   auto &markerAggressors = marker->getAggressors();
   set<frNet*> movableAggressorNets;
-  set<frBlockObject*> movableAggressorOwners;
+  set<frBlockObject*> movableAggressorOwners; 
 // 遍历所有的侵略者，并确定哪些是可以移动的，这通常是指可以被重新布线的网络。
   for (auto &aggressorPair: markerAggressors) {
     auto &aggressor = aggressorPair.first;
@@ -5659,7 +5662,7 @@ void FlexDRWorker::initMazeCost_via_helper(drNet* net, bool isAddPathCost) {
         continue;
       }
     }
-// 寻找成本最低的访问模式
+    // 寻找成本最低的访问模式
     drAccessPattern *minCostAP = nullptr;
     for (auto &ap: pin->getAccessPatterns()) {
       if (ap->hasAccessViaDef(frDirEnum::U)) {// 确保访问模式包含通过定义
@@ -5683,11 +5686,11 @@ void FlexDRWorker::initMazeCost_via_helper(drNet* net, bool isAddPathCost) {
     //   continue;
     // }
     minCostAP->getPoint(bp);// 获取访问模式的位置
-    auto lNum = minCostAP->getBeginLayerNum();
-    frViaDef* viaDef = minCostAP->getAccessViaDef();
-    via = make_unique<drVia>(viaDef);
-    via->setOrigin(bp);
-    via->addToNet(net);
+    auto lNum = minCostAP->getBeginLayerNum();  //获取起始层号
+    frViaDef* viaDef = minCostAP->getAccessViaDef();  //通孔定义
+    via = make_unique<drVia>(viaDef); //通孔
+    via->setOrigin(bp);   //为通孔设置访问模式
+    via->addToNet(net);   //为通孔找到所属网络
     initMazeIdx_connFig(via.get());
     FlexMazeIdx bi, ei;
     via->getMazeIdx(bi, ei);

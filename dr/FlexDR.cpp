@@ -2286,7 +2286,7 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         // worker.setNetOrderingMode(netOrderingMode);
         worker.setCost(workerDRCCost, workerMarkerCost, workerMarkerBloatWidth, workerMarkerBloatDepth);
         worker.main_mt();                               // 运行主线程---开始--布线！！！！！！！！！！！！！！！
-        numQuickMarkers += worker.getNumQuickMarkers(); // 被标记的net总数
+        numQuickMarkers += worker.getNumQuickMarkers(); // 被标记的违例net总数
         cout << "done" << endl
              << flush;
         /*} else if (MAX_THREADS == 1) {
