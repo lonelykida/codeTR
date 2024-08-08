@@ -1,0 +1,48 @@
+
+1.重叠代价和拥塞代价
+  1.1.轨道重叠代价 = 拥塞的
+  1.2.轨道拥塞代价
+  1.3.总代价 = 轨道重叠代价 + 轨道拥塞代价
+2.线长代价：是一个线网的线长代价，是根据一个线网里边的iroute和pin来算的
+  2.1.根据每个net组件构建带权完全图，每个边的权表示两对应net组件间的最短曼哈顿距离
+  2.2.从图中找一个最小生成树(MST)来连接所有组件，MST的长度即为线长代价
+3.初分配
+  3.1.采用贪婪算法來识别其中允许布线之间的重叠的初始TA结果；
+  3.2.算法如下:
+    --------初分配算法 在一个panel上初分配--------
+    输入:panel p，iroute集I(p),轨道集T(p)
+    1. 基于iroute的长度非递增排序I(p)
+    2. 对于每个iroute ir∈I(p)：
+    3.   minCost = ∞  // 记录ir的最小代价
+    4.   对每个轨道t∈T(p)：
+    5.    wlCost = CalculateWirelengthCost(ir,t)  //计算线长成本
+    6.    overlapCost = CalculateOverlapCost(ir,t)  //计算重叠成本
+    7.    blkCost = CalculateBlockageCost(ir,t)  //计算阻塞成本
+    8.    cost = wlCost + α*overlapCost + β*blkCost  //计算ir在t上的代价
+    9.    if cost < minCost:
+    10.     minCost = cost  //更新最小代价
+    11.     minT = t        //更新最小代价对应的轨道
+    12.  将ir分配到minT上
+    13.  直到所有iroute都分配完毕
+    --------------------------------------------
+  3.3.线长成本的计算
+    3.3.1.为节省时间，先找到iroute ir和与ir同一net的每个组件间的最毒段曼哈段距离；
+    3.3.2.若某些iroute尚未分配轨道，则计算时将其忽略；
+    3.3.3.这些所有的距离中最小的一个被用作该种可能的TA的线长成本；
+  3.4.重叠成本的计算，通过1、2中的方法计算重叠成本和阻塞成本
+  3.5.为了在三种成本之间取得平衡，采取了等式：
+    总成本 = wlCost + α*overlapCost + β*blkCost
+    α被设置为0.1，β被设置为非常大的数，以尽可能避免与阻塞产生重叠，p的非常大的数字
+    使得该阶段产生具有最小阻塞成本的结果；另外将α设为0.1，使初始分配阶段更重视减少线长而
+    非重叠成本。
+    初始分配阶段产生具有较短线长但重叠成本较高的解决方案，这问题将在下一节重叠成本减少中解决。
+4.重叠减少阶段
+  4.1.采用协商方案来拆线重布，以尽可能多地消除重叠；
+  4.2.算法如下:
+    --------重叠减少算法 在一个panel上重叠减少--------
+    输入:panel p，已分配的iroute集I(p),轨道集T(p)
+    1. CalculateIrouteCost()计算每个iroute的成本
+    2. repeat:
+    3.   rmax = SelectMaxCostIRoute(I(p))  //选择代价最大的iroute//
+    4.   RipupIroute(rmax)  //拆线
+    5.   tmin = FindMinCostTrack(rmax,T(p)) 

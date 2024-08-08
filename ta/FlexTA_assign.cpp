@@ -1104,6 +1104,7 @@ void FlexTAWorker::assignIroute_updateOthers(set<taPin*, frBlockObjectComp> &pin
   }
 }
 
+//重新分配iroute
 void FlexTAWorker::assignIroute(taPin* iroute) {
   //bool enableOutput = true;
   bool enableOutput = false;
@@ -1134,35 +1135,48 @@ void FlexTAWorker::assignIroute(taPin* iroute) {
     cout <<", wlen_h@" <<iroute->getWlenHelper() <<", cost@" <<iroute->getCost() <<endl;
   }
 
+  //从小到大排序pin的集合
   set<taPin*, frBlockObjectComp> pinS;
+  //根据当前待排序iroute初始化pinS集合
   assignIroute_init(iroute, &pinS);
+  //当前iroute所在的层号和索引
   frLayerNum lNum;
   int idx1, idx2;
+  //为iroute分配可用tracks
   assignIroute_availTracks(iroute, lNum, idx1, idx2);
+  //分配最佳轨道
   auto bestTrackLoc = assignIroute_bestTrack(iroute, lNum, idx1, idx2);
-
+  //更新iroute的最优轨道坐标
   assignIroute_updateIroute(iroute, bestTrackLoc, &pinS);
+  //更新pinS集合中的其他iroute的坐标和cost
   assignIroute_updateOthers(pinS);
 }
 
+//轨道分配的主过程 - FlexTA.cpp的main中调用此处函数
 void FlexTAWorker::assign() {
   //bool enableOutput = true;
   bool enableOutput = false;
-  if (getTAIter() == -1) {
+  if (getTAIter() == -1) {  //taIter 是一个整数 - 但暂时不知道干嘛的
     return;
   }
   //if (isInitTA()) {
-    int maxBufferSize = 20;
+    int maxBufferSize = 20; //缓冲区尺寸设置为20
+    //存储pin指针的缓冲区数组
     vector<taPin*> buffers(maxBufferSize, nullptr);
+    //当前缓冲区的索引号
     int currBufferIdx = 0;
+    //从重分配iroutes队列中取出一个iroute
     auto iroute = popFromReassignIroutes();
+    //当仍然还有iroute时
     while (iroute != nullptr) {
+      //找到当前iroute在buffers中的位置(迭代器)
       auto it = find(buffers.begin(), buffers.end(), iroute);
       // in the buffer, skip
+      //若在缓冲区中存在，或当前iroute的分配次数大于等于最大重试次数，则跳过
       if (it != buffers.end() || iroute->getNumAssigned() >= maxRetry) {
         ;
       // not in the buffer, re-assign
-      } else {
+      } else {//否则，重新分配该iroute
         assignIroute(iroute);
         // re add last buffer item to reassigniroutes if drccost > 0
         //if (buffers[currBufferIdx]) {
@@ -1170,12 +1184,14 @@ void FlexTAWorker::assign() {
         //    addToReassignIroutes(buffers[currBufferIdx]);
         //  }
         //}
-        buffers[currBufferIdx] = iroute;
+        buffers[currBufferIdx] = iroute;  //将当前已分配的iroute放入缓冲区(相当于更新)
+        //iroute索引+1，并取模，防止越界
         currBufferIdx = (currBufferIdx + 1) % maxBufferSize;
         if (enableOutput && !isInitTA()) {
           //cout <<"totCost@" <<totCost <<"/" <<totDrcCost <<endl;
           cout <<"totCost@" <<totCost <<endl;
         }
+        //已分配的iroute数+1
         numAssigned++;
       }
       iroute = popFromReassignIroutes();

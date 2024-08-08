@@ -1,0 +1,37 @@
+main()中的router.main() - > 主函数  main.cpp
+    跳转到main();       FlexRoute.cpp
+        init();     //初始化
+
+        gr();       //全局布线 - 同时还会执行以下操作(数字序号开头):
+
+        1.readGuide();  //读取GUIDE
+
+        2.initDefaultVias();    //初始化默认VIA
+
+        3.writeRefDef();        //写入REFDEF
+
+        4.postProcessGuide();   //设置GCELL模式等
+        
+
+
+        prep();     //引脚准备
+
+
+        ta();       //轨道分配  --> 跳转到FlexTA.cpp 70行
+            init(); //初始化，准备数据和结构
+            assign();  // 执行分配任务 --> 跳到FlexTA_assign.cpp 1149行
+              assignIroute(); //重新分配该iroute - 跳转到FlexTA_assign.cpp 1107行
+                assignIroute_init(iroute, &pinS); //根据当前待分配的iroute来初始化pinS集合(set)
+                assignIroute_availTracks(iroute, lNum, idx1, idx2); //分配可用tracks --> 跳转到FlexTA_assign.cpp 1146行
+                assignIroute_bestTrack(iroute, lNum, idx1, idx2)；  //分配最佳track --> 跳转到FlexTA_assign.cpp 1148行
+                assignIroute_updateIroute(iroute, bestTrackLoc, &pinS); //更新iroute的最优轨道坐标
+                assignIroute_updateOthers(pinS);  //更新pinS集合中的其他iroute的坐标和cost
+            end();  // 结束处理，可能包括清理和最终保存
+
+        dr();       //详细布线 --> 跳转到FlexDR.cpp 2860行
+            init(); //初始化
+
+            SearchRepair();     //布线前的准备  -->跳转到2186行的函数定义
+                
+
+        endFR();    //结束布线
