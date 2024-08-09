@@ -39,10 +39,23 @@
 4.重叠减少阶段
   4.1.采用协商方案来拆线重布，以尽可能多地消除重叠；
   4.2.算法如下:
-    --------重叠减少算法 在一个panel上重叠减少--------
+    --------重叠减少算法 在一个panel上减少重叠--------
     输入:panel p，已分配的iroute集I(p),轨道集T(p)
     1. CalculateIrouteCost()计算每个iroute的成本
     2. repeat:
-    3.   rmax = SelectMaxCostIRoute(I(p))  //选择代价最大的iroute//
+    3.   rmax = SelectMaxCostIRoute(I(p))  //选择代价最大的iroute
     4.   RipupIroute(rmax)  //拆线
-    5.   tmin = FindMinCostTrack(rmax,T(p)) 
+    5.   tmin = FindMinCostTrack(rmax,T(p)) //试探性地分配给每个轨道，并找到最小成本轨道tmin
+    6.   将rmax分配给tmin,并更新tmin上每个iroute的成本
+    7.   更新tmin的历史成本
+    8. 迭代直到满足终止条件
+    -----------------------------------------------
+  4.2.1.选择重布的代价最大的iroute方法:
+    overlapCost(ir, t) + historyCost(ir, t)
+    overlapCost(ir, t):当ir从其原始轨道t上移除时，减少的重叠代价
+    historyCost(ir, t):表示t上的irouteir所覆盖的所有单位区间的历史成本之和
+  4.2.2.为了避免重复地分离和重新分配同一组iroute，一旦iroute被分离和重新分配，
+    该iroute将被冻结f次迭代，然后再次成为iroute选择的候选者(f=20)
+  4.2.3.iroute重分配:
+    0.1*wlCost(ir, t) + α1*overlapCost(ir, t)+β*blkCost(ir, t)+historyCost(ir, t)
+    
