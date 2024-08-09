@@ -542,35 +542,41 @@ void FlexTAWorker::modCutSpacingCost(const frBox &box, frLayerNum lNum, taPinFig
   }
 }
 
+//增加成本
 void FlexTAWorker::addCost(taPinFig* fig, set<taPin*, frBlockObjectComp> *pinS) {
   modCost(fig, true, pinS);
 }
 
+//减少成本
 void FlexTAWorker::subCost(taPinFig* fig, set<taPin*, frBlockObjectComp> *pinS) {
   modCost(fig, false, pinS);
 }
 
+//根据中间参数决定增加成本(true)或减少成本(false)
 void FlexTAWorker::modCost(taPinFig* fig, bool isAddCost, set<taPin*, frBlockObjectComp> *pinS) {
-  if (fig->typeId() == tacPathSeg) {
-    auto obj = static_cast<taPathSeg*>(fig);
-    auto layerNum = obj->getLayerNum();
-    frBox box;
-    obj->getBBox(box);
+  if (fig->typeId() == tacPathSeg) {  //若当前形状是路径段
+    auto obj = static_cast<taPathSeg*>(fig);  //获取当前形状
+    auto layerNum = obj->getLayerNum(); //获取当前形状所在层号
+    frBox box;  //获取当前形状的边界
+    obj->getBBox(box);  
+    //修改最小间距成本等，具体的到底是修改什么还没看
     modMinSpacingCostPlanar(box, layerNum, obj, isAddCost, pinS); // must be current TA layer
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, true, true, pinS);
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, false, true, pinS);
-  } else if (fig->typeId() == tacVia) {
-    auto obj = static_cast<taVia*>(fig);
-    frBox box;
+  } else if (fig->typeId() == tacVia) { //若当前形状是通孔
+    auto obj = static_cast<taVia*>(fig);//获取当前通孔形状
+    frBox box;  //获取当前形状相关的边界
+    //获取当前通孔形状上下层的边界盒及层号，假设通孔的扩展(enclosure)总是矩阵
     obj->getLayer1BBox(box); // assumes enclosure for via is always rectangle
     auto layerNum = obj->getViaDef()->getLayer1Num();
-    // current TA layer
+    // current TA layer  当前的TA层 - 修改一大堆东西
     if (getDir() == getDesign()->getTech()->getLayer(layerNum)->getDir()) {
       modMinSpacingCostPlanar(box, layerNum, obj, isAddCost, pinS);
     }
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, true, false, pinS);
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, false, false, pinS);
 
+    //获取当前通孔形状上下层的边界盒及层号，假设通孔的扩展(enclosure)总是矩阵
     obj->getLayer2BBox(box); // assumes enclosure for via is always rectangle
     layerNum = obj->getViaDef()->getLayer2Num();
     // current TA layer
@@ -580,10 +586,11 @@ void FlexTAWorker::modCost(taPinFig* fig, bool isAddCost, set<taPin*, frBlockObj
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, true, false, pinS);
     modMinSpacingCostVia(box, layerNum, obj, isAddCost, false, false, pinS);
 
-    frTransform xform;
-    frPoint pt;
-    obj->getOrigin(pt);
-    xform.set(pt);
+    frTransform xform;  //偏移坐标
+    frPoint pt; //坐标点
+    obj->getOrigin(pt); //获取当前通孔形状的原点
+    xform.set(pt);    //对原点偏移
+    //下边就是对形状的代价进行修改
     for (auto &uFig: obj->getViaDef()->getCutFigs()) {
       auto rect = static_cast<frRect*>(uFig.get());
       rect->getBBox(box);
@@ -596,19 +603,27 @@ void FlexTAWorker::modCost(taPinFig* fig, bool isAddCost, set<taPin*, frBlockObj
   }
 }
 
+//为iroute分配可用的track
 void FlexTAWorker::assignIroute_availTracks(taPin* iroute, frLayerNum &lNum, int &idx1, int &idx2) {
   //bool enableOutput = true;
   bool enableOutput = false;
+  //获取iroute所在的层号
   lNum = iroute->getGuide()->getBeginLayerNum();
-  frPoint gbp, gep, gIdx;
-  frBox gBox;
+  frPoint gbp, gep, gIdx; //获取iroute的起点(begin)和终点(end)
+  frBox gBox; //扩展盒
   iroute->getGuide()->getPoints(gbp, gep);
+  //获取起点的gcell坐标(索引)
   getDesign()->getTopBlock()->getGCellIdx(gbp, gIdx);
+  //根据起点的gcell坐标(索引)获取gcell的边界盒
   getDesign()->getTopBlock()->getGCellBox(gIdx, gBox);
+  //判断当前iroute的方向是否为横向
   bool isH = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
+  //获取iroute的起始轨道位置和结束轨道位置
   frCoord coordLow  = isH ? gBox.bottom() : gBox.left();
   frCoord coordHigh = isH ? gBox.top()    : gBox.right();
+  //防止轨道位置超出边界
   coordHigh--; // to avoid higher track == guide top/right
+  //获取当前层的轨道索引范围
   getTrackIdx(coordLow, coordHigh, lNum, idx1, idx2);
   if (enableOutput) {
     double dbu = getDesign()->getTopBlock()->getDBUPerUU();
@@ -812,33 +827,46 @@ frUInt4 FlexTAWorker::assignIroute_getAlignCost(taPin* iroute, frCoord trackLoc)
   return pitch * sol;
 }
 
+//尝试将iroute分配到轨道trackLoc时的代价
 frUInt4 FlexTAWorker::assignIroute_getCost(taPin* iroute, frCoord trackLoc, frUInt4 &outDrcCost) {
+  //获取iroute的pitch - 应该是金属宽度？
   frCoord irouteLayerPitch = getTech()->getLayer(iroute->getGuide()->getBeginLayerNum())->getPitch();
   //bool enableOutput = true;
   bool enableOutput = false;
+  //将ir分配到轨道t后的代价
   outDrcCost     = assignIroute_getDRCCost(iroute, trackLoc);
+  //TADRCCOST = 32
+  //若TA还未分配，则DRC代价是0.05倍，否则就是32倍
   int drcCost    = (isInitTA()) ? (0.05 * outDrcCost) : (TADRCCOST * outDrcCost);
+  //将ir分配到轨道t后的线长代价
   int wlenCost   = assignIroute_getWlenCost(iroute, trackLoc);
   // int pinCost    = TAPINCOST * assignIroute_getPinCost(iroute, trackLoc);
+  //将ir分配到轨道t后的pin代价的计算
   int tmpPinCost = assignIroute_getPinCost(iroute, trackLoc);
+  //TAPINCOST = 4
   int pinCost    = (tmpPinCost == 0) ? 0 : TAPINCOST * irouteLayerPitch + tmpPinCost;
+  //将ir分配到轨道t后的align代价(对齐代价？)
   int tmpAlignCost = assignIroute_getAlignCost(iroute, trackLoc);
   int alignCost  = (tmpAlignCost == 0) ? 0 : TAALIGNCOST * irouteLayerPitch + tmpAlignCost;
   // int misalignCost = assignIroute_getMisalignCost(iroute, trackLoc);
   if (enableOutput) {
     cout <<"    drc/wlen/pin/align cost = " <<drcCost <<"/" <<wlenCost <<"/" <<pinCost <<"/" <<alignCost <<endl;
   }
+  //返回drc代价+wlen代价+pin代价-对齐代价和0的最大值
   return max(drcCost + wlenCost + pinCost - alignCost, 0);
 }
 
+//辅助找到iroute的最优轨道
 void FlexTAWorker::assignIroute_bestTrack_helper(taPin* iroute, frLayerNum lNum, int trackIdx, frUInt4 &bestCost, 
                                                  frCoord &bestTrackLoc, int &bestTrackIdx, frUInt4 &drcCost) {
   //bool enableOutput = true;
   bool enableOutput = false;
   double dbu = getDesign()->getTopBlock()->getDBUPerUU();
+  //获取当前轨道的位置
   auto trackLoc = getTrackLocs(lNum)[trackIdx];
+  //尝试将当前ir分配到轨道t后的cost
   auto currCost = assignIroute_getCost(iroute, trackLoc, drcCost);
-  if (isInitTA()) {
+  if (isInitTA()) { //更新最优代价和最优轨道
     if (currCost < bestCost) {
       bestCost = currCost;
       bestTrackLoc = trackLoc;
@@ -856,34 +884,40 @@ void FlexTAWorker::assignIroute_bestTrack_helper(taPin* iroute, frLayerNum lNum,
   }
 }
 
+//在lNum上找到idx1和idx2范围内的最优的track
 int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx1, int idx2) {
   //bool enableOutput = true;
   bool enableOutput = false;
-  double  dbu = getDesign()->getTopBlock()->getDBUPerUU();
-  frCoord bestTrackLoc = 0;
-  int     bestTrackIdx = -1;
+  double  dbu = getDesign()->getTopBlock()->getDBUPerUU();//单位转换
+  frCoord bestTrackLoc = 0; //最优轨道的下标位置
+  int     bestTrackIdx = -1;//最优轨道的下标
+  //将最优代价更新为无穷大
   frUInt4 bestCost = std::numeric_limits<frUInt4>::max();
-  frUInt4 drcCost = 0;
+  frUInt4 drcCost = 0;  //将drc代价设置为0
   //while (1) {
   // if wlen2, then try from  wlen2
   // else try from wlen1 dir
-  if (iroute->hasWlenHelper2()) {
+  if (iroute->hasWlenHelper2()) { //判断当前的iroute是不是pin - 因为hasWlenHelper2返回的是一个bool 类型的pin变量
     //cout <<"if" <<endl;
+    //如果当前iroute的形状是pin的话
+    //找到wlen2的位置
     frCoord wlen2coord = iroute->getWlenHelper2();
     if (iroute->getWlenHelper() > 0) {
       if (enableOutput) {
         cout <<" use wlen2@" <<wlen2coord / dbu <<", wlen@" <<iroute->getWlenHelper() <<endl;
       }
+      //获取轨道起始的索引号
       int startTrackIdx = int(std::lower_bound(trackLocs[lNum].begin(), trackLocs[lNum].end(), wlen2coord) - trackLocs[lNum].begin());
+      //获取轨道的起始索引
       startTrackIdx = min(startTrackIdx, idx2);
       startTrackIdx = max(startTrackIdx, idx1);
-      for (int i = startTrackIdx; i <= idx2; i++) {
+      for (int i = startTrackIdx; i <= idx2; i++) {//将iroute试探地分到每个轨道上，找最好的轨道
         assignIroute_bestTrack_helper(iroute, lNum, i, bestCost, bestTrackLoc, bestTrackIdx, drcCost);
-        if (!drcCost) {
+        if (!drcCost) { //若没有DRC，则不用再继续找了
           break;
         }
       }
-      if (drcCost) {
+      if (drcCost) {  //若有DRC，则尝试从wlen1的方向尝试
         for (int i = startTrackIdx - 1; i >= idx1; i--) {
           assignIroute_bestTrack_helper(iroute, lNum, i, bestCost, bestTrackLoc, bestTrackIdx, drcCost);
           if (!drcCost) {
@@ -891,7 +925,7 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
           }
         }
       }
-    } else if (iroute->getWlenHelper() == 0) {
+    } else if (iroute->getWlenHelper() == 0) {  //否则若是wlen2的话
       if (enableOutput) {
         cout <<" use wlen2@" <<wlen2coord / dbu <<", wlen@" <<iroute->getWlenHelper() <<endl;
       }
@@ -915,7 +949,7 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
           break;
         }
       }
-    } else {
+    } else {  //否则若是wlen1的话
       if (enableOutput) {
         cout <<" use wlen2@" <<wlen2coord / dbu <<", wlen@" <<iroute->getWlenHelper() <<endl;
       }
@@ -937,7 +971,7 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
         }
       }
     }
-  } else {
+  } else {//否则若当前iroute不是pin
     //cout <<"else" <<endl;
     if (iroute->getWlenHelper() > 0) {
       if (enableOutput) {
@@ -979,6 +1013,7 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
       }
     }
   }
+  
   if (bestTrackIdx == -1) {
     auto guide = iroute->getGuide();
     frBox box;
@@ -998,6 +1033,7 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
   }
   //totCost    -= iroute->getCost();
   //totDrcCost -= iroute->getDrcCost();
+  //计算总的代价
   totCost    += drcCost;
   iroute->setCost(drcCost);
   //totDrcCost += drcCost;
@@ -1005,54 +1041,60 @@ int FlexTAWorker::assignIroute_bestTrack(taPin* iroute, frLayerNum lNum, int idx
 }
   
 void FlexTAWorker::assignIroute_updateIroute(taPin* iroute, frCoord bestTrackLoc, set<taPin*, frBlockObjectComp> *pinS) {
+  //找到查询区域
   auto &workerRegionQuery = getWorkerRegionQuery();
+  //判断当前iroute方向是否水平
   bool isH = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
+  //iroute的起终点
   frPoint bp, ep;
-
   // update coord
-  for (auto &uPinFig: iroute->getFigs()) {
-    if (uPinFig->typeId() == tacPathSeg) {
-      auto obj = static_cast<taPathSeg*>(uPinFig.get());
-      obj->getPoints(bp, ep);
-      if (isH) {
-        bp.set(bp.x(), bestTrackLoc);
-        ep.set(ep.x(), bestTrackLoc);
+  //更新iroute中每个形状的坐标
+  for (auto &uPinFig: iroute->getFigs()) {  //获取iroute中的每个形状
+    if (uPinFig->typeId() == tacPathSeg) {  //若当前形状是布线段
+      auto obj = static_cast<taPathSeg*>(uPinFig.get());//获取形状对象
+      obj->getPoints(bp, ep); //获取布线段的起终点
+      if (isH) {  //若当前形状是横向布线段
+        bp.set(bp.x(), bestTrackLoc); //设置布线段的起点坐标
+        ep.set(ep.x(), bestTrackLoc); //设置布线段的终点坐标
       } else {
         bp.set(bestTrackLoc, bp.y());
         ep.set(bestTrackLoc, ep.y());
       }
-      obj->setPoints(bp, ep);
-    } else if (uPinFig->typeId() == tacVia) {
-      auto obj = static_cast<taVia*>(uPinFig.get());
-      obj->getOrigin(bp);
-      if (isH) {
-        bp.set(bp.x(), bestTrackLoc);
+      obj->setPoints(bp, ep); //将起终点设置到形状对象上
+    } else if (uPinFig->typeId() == tacVia) { //若当前形状是通孔
+      auto obj = static_cast<taVia*>(uPinFig.get());  //获取通孔形状
+      obj->getOrigin(bp); //获取通孔的中心点
+      if (isH) {  //若当前形状是横向通孔
+        bp.set(bp.x(), bestTrackLoc); //设置通孔的中心点
       } else {
-        bp.set(bestTrackLoc, bp.y());
+        bp.set(bestTrackLoc, bp.y()); 
       }
-      obj->setOrigin(bp);
-    } else {
+      obj->setOrigin(bp); //设置通孔的中心点
+    } else {  //若当前形状不是布线段和通孔，输出错误信息
       cout <<"Error: assignIroute_updateIroute unsupported pinFig" <<endl;
       exit(1);
     }
   }
   // addCost
+  //将iroute中的每个形状加入到pinS对类
   for (auto &uPinFig: iroute->getFigs()) {
     addCost(uPinFig.get(), isInitTA() ? nullptr : pinS);
     workerRegionQuery.add(uPinFig.get());
   }
-  iroute->addNumAssigned();
+  iroute->addNumAssigned(); //增加iroute的被分配次数
 }
 
+//初始化
 void FlexTAWorker::assignIroute_init(taPin* iroute, set<taPin*, frBlockObjectComp> *pinS) {
+  //找查询区域
   auto &workerRegionQuery = getWorkerRegionQuery();
-  // subCost
-  if (!isInitTA()) {
-    for (auto &uPinFig: iroute->getFigs()) {
-      workerRegionQuery.remove(uPinFig.get());
-      subCost(uPinFig.get(), pinS);
+  // subCost 减少成本
+  if (!isInitTA()) {  //若当前还未初始化，则需减少成本
+    for (auto &uPinFig: iroute->getFigs()) {  //对iroute中的每个形状
+      workerRegionQuery.remove(uPinFig.get());//将其从查询区域中移除
+      subCost(uPinFig.get(), pinS); //减少该形状对应的成本
     }
-    totCost    -= iroute->getCost();
+    totCost    -= iroute->getCost();//从总成本中扣除当前iroute的成本
     //totDrcCost -= iroute->getDrcCost();
   }
 }
@@ -1141,10 +1183,10 @@ void FlexTAWorker::assignIroute(taPin* iroute) {
   assignIroute_init(iroute, &pinS);
   //当前iroute所在的层号和索引
   frLayerNum lNum;
-  int idx1, idx2;
+  int idx1, idx2; //用来存放iroute可用轨道的索引范围
   //为iroute分配可用tracks
   assignIroute_availTracks(iroute, lNum, idx1, idx2);
-  //分配最佳轨道
+  //在可用轨道idx1和idx2之间分配最佳轨道给iroute
   auto bestTrackLoc = assignIroute_bestTrack(iroute, lNum, idx1, idx2);
   //更新iroute的最优轨道坐标
   assignIroute_updateIroute(iroute, bestTrackLoc, &pinS);

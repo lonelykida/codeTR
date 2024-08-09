@@ -58,4 +58,9 @@
     该iroute将被冻结f次迭代，然后再次成为iroute选择的候选者(f=20)
   4.2.3.iroute重分配:
     0.1*wlCost(ir, t) + α1*overlapCost(ir, t)+β*blkCost(ir, t)+historyCost(ir, t)
-    
+    wlCost(ir, t):当ir分配给轨道t时与ir相关联的net的线长代价
+    overlapCost(ir, t)和blkCost(ir, t):当ir分配给轨道t时，t上的重叠成本和阻塞成本的增加量
+    historyCost(ir, t):当ir分配给轨道t时，由ir覆盖的所有单位区间的历史成本的总和
+    α1:重分配开始时设置为0.1，并在每abs(I(p))/k轮后增加0.1，I(p)是每个panel p中的iroute数量，
+    k被设置为10；
+    β:是一个很大的数
