@@ -102,8 +102,8 @@ namespace fr {
     // others
     int main();
   protected:
-    frTechObject*   tech;
-    frDesign*       design;
+    frTechObject*   tech;   //技术块
+    frDesign*       design; //设计块
     // others
     void main_helper(frLayerNum lNum, int maxOffsetIter, int panelWidth);
     void initTA(int size);
@@ -136,7 +136,7 @@ namespace fr {
     
     void init();
   protected:
-    FlexTAWorker* taWorker;
+    FlexTAWorker* taWorker; //工作者 - 用的boost的图形库
     std::vector<bgi::rtree<rq_rptr_value_t<taPinFig>, 
                            bgi::quadratic<16>/*, 
                            bgi::indexable<rq_rptr_value_t<taPinFig> >,
@@ -267,28 +267,29 @@ namespace fr {
     int main_mt();
     
   protected:
-    frTechObject*                      tech; // not set
-    frDesign*                          design;
-    frBox                              routeBox;
-    frBox                              extBox;
-    frPrefRoutingDirEnum               dir;
-    int                                taIter;
-    FlexTAWorkerRegionQuery            rq;
+    frTechObject*                      tech;      // not set - 未设置，技术块对象
+    frDesign*                          design;    //设计块对象
+    frBox                              routeBox;  //布线区域
+    frBox                              extBox;    //扩展区域
+    frPrefRoutingDirEnum               dir;       //布线方向
+    int                                taIter;    //布线迭代次数
+    FlexTAWorkerRegionQuery            rq;        //布线查询
 
     // // std::vector<std::unique_ptr<drNet> >    nets; //自定义线网
 
 
     //std::vector<frGuide*>            guides;
-    std::vector<std::unique_ptr<taPin> > iroutes; // unsorterd iroutes
-    std::vector<std::unique_ptr<taPin> > extIroutes;
-    std::vector<std::vector<frCoord> >   trackLocs;
+    std::vector<std::unique_ptr<taPin> > iroutes; // unsorterd iroutes - 未排序的iroutes集合
+    std::vector<std::unique_ptr<taPin> > extIroutes;//未排序的extIroutes集合
+    std::vector<std::vector<frCoord> >   trackLocs; //轨道的坐标集合
     //std::vector<std::vector<taTrack> >   tracks;
     //std::priority_queue<taIroute*, std::vector<taIroute*>, taIrouteComp> pq;
+    //已排好序的重分配iroute集合
     std::set<taPin*, taPinComp>  reassignIroutes; // iroutes to be assigned in sorted order
 
-    int                                numAssigned;
-    int                                totCost;
-    int                                maxRetry;
+    int                                numAssigned;//分配的次数
+    int                                totCost;   //总代价
+    int                                maxRetry;  //最大重试次数
     //frUInt4                            totDrcCost;
     
     //// others

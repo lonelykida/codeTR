@@ -1076,7 +1076,7 @@ void FlexTAWorker::assignIroute_updateIroute(taPin* iroute, frCoord bestTrackLoc
     }
   }
   // addCost
-  //将iroute中的每个形状加入到pinS对类
+  //将iroute中的每个形状加入到查询区域中
   for (auto &uPinFig: iroute->getFigs()) {
     addCost(uPinFig.get(), isInitTA() ? nullptr : pinS);
     workerRegionQuery.add(uPinFig.get());
@@ -1089,7 +1089,7 @@ void FlexTAWorker::assignIroute_init(taPin* iroute, set<taPin*, frBlockObjectCom
   //找查询区域
   auto &workerRegionQuery = getWorkerRegionQuery();
   // subCost 减少成本
-  if (!isInitTA()) {  //若当前还未初始化，则需减少成本
+  if (!isInitTA()) {  //若当前iroute已初始化，则需减少成本
     for (auto &uPinFig: iroute->getFigs()) {  //对iroute中的每个形状
       workerRegionQuery.remove(uPinFig.get());//将其从查询区域中移除
       subCost(uPinFig.get(), pinS); //减少该形状对应的成本
@@ -1098,24 +1098,25 @@ void FlexTAWorker::assignIroute_init(taPin* iroute, set<taPin*, frBlockObjectCom
     //totDrcCost -= iroute->getDrcCost();
   }
 }
-
+  //更新其它iroute，
 void FlexTAWorker::assignIroute_updateOthers(set<taPin*, frBlockObjectComp> &pinS) {
   //bool enableOutput = true;
   bool enableOutput = false;
+  //判断iroute的方向是否水平
   bool isH = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
-  frPoint bp, ep;
-  if (isInitTA()) {
+  frPoint bp, ep;//iroute的起终点
+  if (isInitTA()) {//若初始化，则直接返回
     return;
   }
-  for (auto &iroute: pinS) {
-    removeFromReassignIroutes(iroute);
+  for (auto &iroute: pinS) {  //对iroute集合中的每个iroute
+    removeFromReassignIroutes(iroute);//将其从再分配集合中移除
     // recalculate cost
-    frUInt4 drcCost = 0;
-    frCoord trackLoc = std::numeric_limits<frCoord>::max();
-    for (auto &uPinFig: iroute->getFigs()) {
-      if (uPinFig->typeId() == tacPathSeg) {
-        static_cast<taPathSeg*>(uPinFig.get())->getPoints(bp, ep);
-        if (isH) {
+    frUInt4 drcCost = 0;  //drc成本初始化为0
+    frCoord trackLoc = std::numeric_limits<frCoord>::max();//轨道位置初始化为最大值
+    for (auto &uPinFig: iroute->getFigs()) {  //对iroute中的第一个布线段形状
+      if (uPinFig->typeId() == tacPathSeg) {  //若当前形状是布线段
+        static_cast<taPathSeg*>(uPinFig.get())->getPoints(bp, ep);//获取该布线段的起终点
+        if (isH) {//判断横纵向，从而获取轨道位置
           trackLoc = bp.y();
         } else {
           trackLoc = bp.x();
@@ -1123,22 +1124,22 @@ void FlexTAWorker::assignIroute_updateOthers(set<taPin*, frBlockObjectComp> &pin
         break;
       }
     }
-    if (trackLoc == std::numeric_limits<frCoord>::max()) {
+    if (trackLoc == std::numeric_limits<frCoord>::max()) {//若没有分配轨道位置，则输出错误信息
       cout <<"Error: FlexTAWorker::assignIroute_updateOthers does not find trackLoc" <<endl;
       exit(1);
     }
-    totCost    -= iroute->getCost();
+    totCost    -= iroute->getCost();  //总成本减去当前iroute的成本
     //totDrcCost -= iroute->getDrcCost();
     //auto tmpCost = assignIroute_getCost(iroute, trackLoc, drcCost);
-    assignIroute_getCost(iroute, trackLoc, drcCost);
-    iroute->setCost(drcCost);
+    assignIroute_getCost(iroute, trackLoc, drcCost);  //计算当前iroute分配到轨道t的成本
+    iroute->setCost(drcCost); //将iroute的成本设置为当前预估drcCost
     //iroute->setCost(tmpCost);
     //iroute->setDrcCost(drcCost);
     //totCost    += iroute->getCost();
     //totDrcCost += iroute->getDrcCost();
-    totCost    += iroute->getCost();
-    if (drcCost && iroute->getNumAssigned() < maxRetry) {
-      addToReassignIroutes(iroute);
+    totCost    += iroute->getCost();  //总成本加上当前iroute的预估成本
+    if (drcCost && iroute->getNumAssigned() < maxRetry) {//若当前iroute分配过去后有成本，且iroute的被分配次数小于最大重试次数
+      addToReassignIroutes(iroute); //将该iroute又加到再分配队列中
     }
   }
   if (enableOutput && pinS.size()) {
@@ -1236,7 +1237,7 @@ void FlexTAWorker::assign() {
         //已分配的iroute数+1
         numAssigned++;
       }
-      iroute = popFromReassignIroutes();
+      iroute = popFromReassignIroutes();  //接着再从重分配iroutes队列中取出一个iroute
     }
   //}
 }

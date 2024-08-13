@@ -5702,39 +5702,87 @@ int io::Parser::getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUser
 
     return 0;
 }
-
+//获取LEF中的宏
 int io::Parser::getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData data)
 {
     // bool enableOutput = true;
-    bool enableOutput = false;
+    bool enableOutput = false;  //是否输出每个宏的信息-测试看看
+    //若当前类型不是宏类型，则出错
     if ((type != lefrMacroCbkType))
     {
         cout << "Type is not lefrMacroCbkType!" << endl;
         exit(2);
     }
-
+    //宏原点的X，Y，宏尺寸的X，Y
     frCoord originX = round(macro->originX() * ((io::Parser *)data)->tech->getDBUPerUU());
     frCoord originY = round(macro->originY() * ((io::Parser *)data)->tech->getDBUPerUU());
     frCoord sizeX = round(macro->sizeX() * ((io::Parser *)data)->tech->getDBUPerUU());
     frCoord sizeY = round(macro->sizeY() * ((io::Parser *)data)->tech->getDBUPerUU());
+    /*执行结果如下：
+        originX = 0 originY = 0
+        sizeX = 9200 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   4.6 1.71 ;
+        CORE
+        originX = 0 originY = 0
+        sizeX = 2800 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   1.4 1.71 ;
+        CORE
+        originX = 0 originY = 0
+        sizeX = 2400 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   1.2 1.71 ;
+        CORE
+        originX = 0 originY = 0
+        sizeX = 10800 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   5.4 1.71 ;
+        CORE
+        originX = 0 originY = 0
+        sizeX = 12400 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   6.2 1.71 ;
+        CORE
+        originX = 0 originY = 0
+        sizeX = 7200 sizeY = 3420
+        ORIGIN 0 0 ;
+        SIZE   3.6 1.71 ;
+        CORE
+    */
     if (enableOutput)
     {
         cout << "  ORIGIN " << originX * 1.0 / ((io::Parser *)data)->tech->getDBUPerUU() << " "
              << originY * 1.0 / ((io::Parser *)data)->tech->getDBUPerUU() << " ;" << endl;
         cout << "  SIZE   " << sizeX * 1.0 / ((io::Parser *)data)->tech->getDBUPerUU() << " "
              << sizeY * 1.0 / ((io::Parser *)data)->tech->getDBUPerUU() << " ;" << endl;
+        // cout << "DBUPerUU's value = " << ((io::Parser *)data)->tech->getDBUPerUU() << endl; //2000
+    /*跑的结果如下：
+        CORE
+            ORIGIN 0 0 ;
+            SIZE   1.4 1.71 ;
+        CORE
+            ORIGIN 0 0 ;
+            SIZE   1.2 1.71 ;
+        CORE
+            ORIGIN 0 0 ;
+            SIZE   1.4 1.71 ;
+        CORE
+            ORIGIN 0 0 ;
+            SIZE   6.2 1.71 ;
+    */
     }
-    vector<frBoundary> bounds;
-    frBoundary bound;
-    vector<frPoint> points;
-    points.push_back(frPoint(originX, originY));
-    points.push_back(frPoint(sizeX, originY));
-    points.push_back(frPoint(sizeX, sizeY));
-    points.push_back(frPoint(originX, sizeY));
-    bound.setPoints(points);
-    bounds.push_back(bound);
+    vector<frBoundary> bounds;  //宏边界集
+    frBoundary bound;           //边界
+    vector<frPoint> points;     //宏点集
+    points.push_back(frPoint(originX, originY));    //添加宏原点
+    points.push_back(frPoint(sizeX, originY));      //添加X方向宏尺寸及其对应的Y坐标
+    points.push_back(frPoint(sizeX, sizeY));        //添加X方向宏尺寸及Y方向宏尺寸
+    points.push_back(frPoint(originX, sizeY));      //添加宏原点及其对应的Y坐标
+    bound.setPoints(points);    //将点集赋值给边界
+    bounds.push_back(bound);    //将边界赋值给边界集
     //((io::Parser*)data)->tmpBlock->setBBox(frBox(originX, originY, sizeX, sizeY));
-    ((io::Parser *)data)->tmpBlock->setBoundaries(bounds);
+    ((io::Parser *)data)->tmpBlock->setBoundaries(bounds);  //将边界集赋值给宏
 
     if (enableOutput)
     {
@@ -5743,27 +5791,33 @@ int io::Parser::getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUser
             std::cout << macro->macroClass() << "\n";
         }
     }
+    //设置宏的类型
     if (macro->hasClass())
     {
         if (strcmp(macro->macroClass(), "CORE") == 0)
         {
             ((io::Parser *)data)->tmpBlock->setMacroClass(MacroClassEnum::CORE);
+            cout<<"cur MACRO TYPE = CORE"<<endl;
         }
         else if (strcmp(macro->macroClass(), "CORE TIEHIGH") == 0)
         {
             ((io::Parser *)data)->tmpBlock->setMacroClass(MacroClassEnum::CORE_TIEHIGH);
+            cout<<"cur MACRO TYPE = CORE_TIEHIGH"<<endl;
         }
         else if (strcmp(macro->macroClass(), "CORE TIELOW") == 0)
         {
             ((io::Parser *)data)->tmpBlock->setMacroClass(MacroClassEnum::CORE_TIELOW);
+            cout<<"cur MACRO TYPE = CORE_TIELOW"<<endl;
         }
         else if (strcmp(macro->macroClass(), "CORE WELLTAP") == 0)
         {
             ((io::Parser *)data)->tmpBlock->setMacroClass(MacroClassEnum::CORE_WELLTAP);
+            cout<<"cur MACRO TYPE = CORE_WELLTAP"<<endl;
         }
         else if (strcmp(macro->macroClass(), "CORE SPACER") == 0)
         {
             ((io::Parser *)data)->tmpBlock->setMacroClass(MacroClassEnum::CORE_SPACER);
+            
         }
         else if (strcmp(macro->macroClass(), "CORE ANTENNACELL") == 0)
         {
@@ -6269,7 +6323,7 @@ int io::Parser::getLefString(lefrCallbackType_e type, const char *str, lefiUserD
     }
     return 0;
 }
-
+//获取LEF中用户定义的数据库单元大小
 int io::Parser::getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData data)
 {
     // bool enableOutput = true;
@@ -6702,10 +6756,10 @@ void io::Parser::readLef()
     FILE *f;
     int res;
 
-    lefrInitSession(1);
-
+    lefrInitSession(1); //lef初始化的session
+    //设置用户数据，将当前parser指针作为参数传递(会转换成空指针)
     lefrSetUserData((lefiUserData)this);
-
+    //获取LEF中的宏
     lefrSetMacroCbk(getLefMacros);
     lefrSetMacroBeginCbk(getLefString);
     lefrSetMacroEndCbk(getLefString);

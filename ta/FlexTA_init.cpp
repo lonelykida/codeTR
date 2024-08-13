@@ -32,44 +32,51 @@ using namespace std;
 using namespace fr;
 
 
-
+//初始化轨道
 void FlexTAWorker::initTracks() {
   //bool enableOutput = true;
   bool enableOutput = false;
-  nets.clear();
+  nets.clear(); //1.清空所有net
   //tracks.clear();
   //tracks.resize(getDesign()->getTech()->getLayers().size());
-  trackLocs.clear();
+  trackLocs.clear();  //2.清空所有轨道
+  //3.将轨道集合大小重新设置为层的数量
   trackLocs.resize(getDesign()->getTech()->getLayers().size());
+  //4.在每层的轨道集合中初始化轨道坐标集，轨道数量设置为层的数量-二维数组，一行就是一层的轨道坐标
   vector<set<frCoord> > trackCoordSets(getDesign()->getTech()->getLayers().size());
   // uPtr for tp
-  for (int lNum = 0; lNum < (int)getDesign()->getTech()->getLayers().size(); lNum++) {
-    auto layer = getDesign()->getTech()->getLayer(lNum);
-    if (layer->getType() != frLayerTypeEnum::ROUTING) {
+  //对每个布线金属层，计算该层的轨道数量，并将其放入trackCoordSets集合中
+  for (int lNum = 0; lNum < (int)getDesign()->getTech()->getLayers().size(); lNum++) {  //对每一个金属层
+    auto layer = getDesign()->getTech()->getLayer(lNum);  //获取当前层的指针
+    if (layer->getType() != frLayerTypeEnum::ROUTING) {  //如果不是布线层则跳过
       continue;
     }
-    if (layer->getDir() != getDir()) {
+    if (layer->getDir() != getDir()) {  //如果不是当前方向的布线层则跳过
       continue;
     }
-    for (auto &tp: getDesign()->getTopBlock()->getTrackPatterns(lNum)) {
+    for (auto &tp: getDesign()->getTopBlock()->getTrackPatterns(lNum)) {  //对当前层的所有轨道模式
       if ((getDir() == frcHorzPrefRoutingDir && tp->isHorizontal() == false) ||
-          (getDir() == frcVertPrefRoutingDir && tp->isHorizontal() == true)) {
+          (getDir() == frcVertPrefRoutingDir && tp->isHorizontal() == true)) {//如果不是当前方向的轨道模式则跳过
         if (enableOutput) {
           cout <<"TRACKS " <<(tp->isHorizontal() ? string("X ") : string("Y "))
                <<tp->getStartCoord() <<" DO " <<tp->getNumTracks() <<" STEP "
                <<tp->getTrackSpacing() <<" LAYER " <<tp->getLayerNum() 
                <<" ;" <<endl;
         }
+        //是否是水平轨道
         bool isH = (getDir() == frcHorzPrefRoutingDir);
+        //计算了基于轨道模式起始坐标和设计边界的轨道数量
         frCoord tempCoord1 = (isH ? getRouteBox().bottom() : getRouteBox().left());
         frCoord tempCoord2 = (isH ? getRouteBox().top()    : getRouteBox().right());
         int trackNum = (tempCoord1 - tp->getStartCoord()) / (int)tp->getTrackSpacing();
         if (trackNum < 0) {
           trackNum = 0;
         }
+        //可能计算的时候会因为精度问题少一根轨道，就需要通过判断来将缺少的轨道补上
         if (trackNum * (int)tp->getTrackSpacing() + tp->getStartCoord() < tempCoord1) {
           trackNum++;
         }
+        //遍历每个轨道，并将轨道坐标插入到轨道坐标集合中
         for (; trackNum < (int)tp->getNumTracks() && trackNum * (int)tp->getTrackSpacing() + tp->getStartCoord() < tempCoord2; trackNum++) {
           frCoord trackCoord = trackNum * tp->getTrackSpacing() + tp->getStartCoord();
           //cout <<"TRACKLOC " <<trackCoord * 1.0 / getDesign()->getTopBlock()->getDBUPerUU() <<endl;
@@ -78,10 +85,12 @@ void FlexTAWorker::initTracks() {
       }
     }
   }
+  //对轨道集合trackCoordSets中的每个轨道坐标放入tracks中(trackCoordSets会从小到大排序)
   for (int i = 0; i < (int)trackCoordSets.size(); i++) {
     if (enableOutput) {
       cout <<"lNum " <<i <<":";
     }
+    //对每层的轨道坐标集合输出
     for (auto coord: trackCoordSets[i]) {
       if (enableOutput) {
         cout <<" " <<coord * 1.0 / getDesign()->getTopBlock()->getDBUPerUU();
@@ -98,53 +107,55 @@ void FlexTAWorker::initTracks() {
 }
 
 // use prefAp, otherwise return false
+//使用优先访问点，否则返回false
 bool FlexTAWorker::initIroute_helper_pin(frGuide* guide, frCoord &maxBegin, frCoord &minEnd, 
                                          set<frCoord> &downViaCoordSet, set<frCoord> &upViaCoordSet,
                                          int &wlen, frCoord &wlen2) {
   bool enableOutput = false;
-  frPoint bp, ep;
+  frPoint bp, ep; //获取当前guide的起终点
   guide->getPoints(bp, ep);
-  if (!(bp == ep)) {
+  if (!(bp == ep)) {  //若起终点不相等，则不符合要求
     return false;
   }
 
-  auto net      = guide->getNet();
-  auto layerNum = guide->getBeginLayerNum();
-  bool isH      = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
-  bool hasDown  = false;
-  bool hasUp    = false;
+  auto net      = guide->getNet();  //获取guide的线网
+  auto layerNum = guide->getBeginLayerNum();  //获取guide的层号
+  bool isH      = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);//当前布线方向是否水平
+  bool hasDown  = false;//是否有下层 = false
+  bool hasUp    = false;//是否有上层 = false
 
-  vector<frGuide*> nbrGuides;
-  auto rq = getRegionQuery();
-  frBox box;
-  box.set(bp, bp);
-  nbrGuides.clear();
-  if (layerNum - 2 >= BOTTOM_ROUTING_LAYER) {
-    rq->queryGuide(box, layerNum - 2, nbrGuides);
-    for (auto &nbrGuide: nbrGuides) {
-      if (nbrGuide->getNet() == net) {
-        hasDown = true;
+  vector<frGuide*> nbrGuides; //nbrGuide的vector
+  auto rq = getRegionQuery(); //查询区域
+  frBox box;  //当前guide的box
+  box.set(bp, bp);  //设置box的起点和终点都是bp
+  nbrGuides.clear();  //初始化nbrGuides为空
+  if (layerNum - 2 >= BOTTOM_ROUTING_LAYER) { //判断是否有下层 -- BOTTOM_ROUTING_LAYER = 2
+    rq->queryGuide(box, layerNum - 2, nbrGuides); //查询布线区域
+    for (auto &nbrGuide: nbrGuides) { //遍历nbrGuides
+      if (nbrGuide->getNet() == net) {//若nbrGuide的线网等于guide的线网
+        hasDown = true; //有下层
         break;
       }
     }
   } 
   nbrGuides.clear();
-  if (layerNum + 2 < (int)design->getTech()->getLayers().size()) {
-    rq->queryGuide(box, layerNum + 2, nbrGuides);
-    for (auto &nbrGuide: nbrGuides) {
-      if (nbrGuide->getNet() == net) {
-        hasUp = true;
+  if (layerNum + 2 < (int)design->getTech()->getLayers().size()) {  //判断是否有上层
+    rq->queryGuide(box, layerNum + 2, nbrGuides); //查询布线区域
+    for (auto &nbrGuide: nbrGuides) { //遍历nbrGuides
+      if (nbrGuide->getNet() == net) {//若nbrGuide的线网等于guide的线网
+        hasUp = true; //有上层
         break;
       }
     }
   } 
 
+  //查询pin的结果
   vector<frBlockObject*> result;
-  box.set(bp, bp);
-  rq->queryGRPin(box, result);
-  frTransform instXform; // (0,0), frcR0
-  frTransform shiftXform;
-  frTerm* trueTerm = nullptr;
+  box.set(bp, bp);  //查询区域
+  rq->queryGRPin(box, result);  //查询区域内的pin
+  frTransform instXform; // (0,0), frcR0   //实例X的形式
+  frTransform shiftXform;//改变X的形式
+  frTerm* trueTerm = nullptr; //正确的Term指针
   //string  name;
   for (auto &term: result) {
     //bool hasInst = false;
@@ -399,19 +410,19 @@ void FlexTAWorker::initIroute_helper_generic(frGuide* guide, frCoord &minBegin, 
   // wlen2 purely depends on ap regardless of track
   initIroute_helper_generic_helper(guide, wlen2);
 }
-
+//从guide中初始化iroute
 void FlexTAWorker::initIroute(frGuide *guide) {
   bool enableOutput = false;
   //bool enableOutput = true;
-  auto iroute = make_unique<taPin>();
-  iroute->setGuide(guide);
-  frBox guideBox;
-  guide->getBBox(guideBox);
-  auto layerNum = guide->getBeginLayerNum();
-  bool isExt = !(getRouteBox().contains(guideBox));
-  if (isExt) {
+  auto iroute = make_unique<taPin>(); //iroute指针
+  iroute->setGuide(guide);  //将guide文件给iroute
+  frBox guideBox; //存储guide区域的边框
+  guide->getBBox(guideBox); //获取guide区域的边框
+  auto layerNum = guide->getBeginLayerNum();  //获取当前guide所属金属层
+  bool isExt = !(getRouteBox().contains(guideBox)); //判断当前guide区域是否在ext区域中
+  if (isExt) {  //若guide在布线区域中
     // extIroute empty, skip
-    if (guide->getRoutes().empty()) {
+    if (guide->getRoutes().empty()) { //若当前guide没有布线需求，则不做任何操作
       return;
     }
     if (enableOutput) {
@@ -421,22 +432,24 @@ void FlexTAWorker::initIroute(frGuide *guide) {
     }
   }
   
-  frCoord maxBegin, minEnd;
+  frCoord maxBegin, minEnd; //最大起始点和最小终止点
+  //上/下通孔的坐标集合
   set<frCoord> downViaCoordSet, upViaCoordSet;
-  int wlen = 0;
-  frCoord wlen2 = std::numeric_limits<frCoord>::max();
+  int wlen = 0; //线长1初始化为0
+  frCoord wlen2 = std::numeric_limits<frCoord>::max();  //线长2初始化为无穷大
+  //通过下边函数更新maxBegin,minEnd,downViaCoordSet,upViaCoordSet,wlen,wlen2等参数
   initIroute_helper(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2);
 
-  frCoord trackLoc = 0;
-  frPoint segBegin, segEnd;
-  bool    isH         = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
+  frCoord trackLoc = 0; //标记轨道坐标 
+  frPoint segBegin, segEnd; //标记线段起点和终点
+  bool    isH         = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);//判断当前布线方向是否为水平
   // set trackIdx
-  if (!isInitTA()) {
-    for (auto &connFig: guide->getRoutes()) {
-      if (connFig->typeId() == frcPathSeg) {
-        auto obj = static_cast<frPathSeg*>(connFig.get());
-        obj->getPoints(segBegin, segEnd);
-        trackLoc = (isH ? segBegin.y() : segBegin.x());
+  if (!isInitTA()) {  //若当前iroute不是初始化iroute
+    for (auto &connFig: guide->getRoutes()) { //对当前guide的布线路线进行遍历
+      if (connFig->typeId() == frcPathSeg) {  //若当前布线路线为线段
+        auto obj = static_cast<frPathSeg*>(connFig.get());  //获取该线段
+        obj->getPoints(segBegin, segEnd);     //获取线段起点和终点
+        trackLoc = (isH ? segBegin.y() : segBegin.x()); //根据线段的布线方向获取轨道坐标
         //auto psLNum = obj->getLayerNum();
         //int idx1 = 0;
         //int idx2 = 0;
@@ -445,20 +458,20 @@ void FlexTAWorker::initIroute(frGuide *guide) {
       }
     }
   } else {
-    trackLoc = 0;
+    trackLoc = 0; //若当前iroute未初始化，则设置轨道坐标为0
   }
 
-  unique_ptr<taPinFig> ps = make_unique<taPathSeg>();
+  unique_ptr<taPinFig> ps = make_unique<taPathSeg>(); //获取ta的线段对象
   auto rptr = static_cast<taPathSeg*>(ps.get());
-  if (isH) {
+  if (isH) {  //根据水平或垂直方向设置线段起点和终点
     rptr->setPoints(frPoint(maxBegin, trackLoc), frPoint(minEnd, trackLoc));
   } else {
     rptr->setPoints(frPoint(trackLoc, maxBegin), frPoint(trackLoc, minEnd));
   }
-  rptr->setLayerNum(layerNum);
-  rptr->setStyle(getDesign()->getTech()->getLayer(layerNum)->getDefaultSegStyle());
-  // owner set when add to taPin
-  iroute->addPinFig(ps);
+  rptr->setLayerNum(layerNum);  //设置轨道所属金属层
+  rptr->setStyle(getDesign()->getTech()->getLayer(layerNum)->getDefaultSegStyle());//设置线段的类型
+  // owner set when add to taPin - 当加入taPin时，设置owner
+  iroute->addPinFig(ps);  //将轨道分配的线段对象加入iroute
 
   //iroute.setCoords(maxBegin, minEnd);
   //for (auto coord: upViaCoordSet) {
@@ -467,46 +480,50 @@ void FlexTAWorker::initIroute(frGuide *guide) {
   //for (auto coord: downViaCoordSet) {
   //  iroute.addViaCoords(coord, false);
   //}
-  for (auto coord: upViaCoordSet) {
+  for (auto coord: upViaCoordSet) { //对上层通孔的坐标进行遍历
+    //获取上一层的通孔
     unique_ptr<taPinFig> via = make_unique<taVia>(getDesign()->getTech()->getLayer(layerNum + 1)->getDefaultViaDef());
-    auto rViaPtr = static_cast<taVia*>(via.get());
-    rViaPtr->setOrigin(isH ? frPoint(coord, trackLoc) : frPoint(trackLoc, coord));
-    iroute->addPinFig(via);
+    auto rViaPtr = static_cast<taVia*>(via.get());  //获取通孔指针
+    rViaPtr->setOrigin(isH ? frPoint(coord, trackLoc) : frPoint(trackLoc, coord));//设置通孔的中心点
+    iroute->addPinFig(via); //将当前通孔添加到当前iroute中
   }
-  for (auto coord: downViaCoordSet) {
+  for (auto coord: downViaCoordSet) {//对下层通孔同样执行该操作
     unique_ptr<taPinFig> via = make_unique<taVia>(getDesign()->getTech()->getLayer(layerNum - 1)->getDefaultViaDef());
     auto rViaPtr = static_cast<taVia*>(via.get());
     rViaPtr->setOrigin(isH ? frPoint(coord, trackLoc) : frPoint(trackLoc, coord));
     iroute->addPinFig(via);
   }
-  iroute->setWlenHelper(wlen);
+  iroute->setWlenHelper(wlen);  //设置当前iroute的线长wlen
   if (wlen2 < std::numeric_limits<frCoord>::max()) {
     iroute->setWlenHelper2(wlen2);
   }
-  addIroute(iroute, isExt);
+  addIroute(iroute, isExt); //将当前iroute加入iroutes
   //iroute.setId(iroutes.size()); // set id
   //iroutes.push_back(iroute);
 }
 
 
-
+//初始化iroute
 void FlexTAWorker::initIroutes() {
   //bool enableOutput = true;
   bool enableOutput = false;
-  vector<rq_rptr_value_t<frGuide> > result;
-  auto regionQuery = getRegionQuery();
+  vector<rq_rptr_value_t<frGuide> > result;//存放guide查询结果
+  auto regionQuery = getRegionQuery();  //获取查询区域
+  //对每一层进行查询
   for (int lNum = 0; lNum < (int)getDesign()->getTech()->getLayers().size(); lNum++) {
-    auto layer = getDesign()->getTech()->getLayer(lNum);
-    if (layer->getType() != frLayerTypeEnum::ROUTING) {
+    auto layer = getDesign()->getTech()->getLayer(lNum);//获取当前层
+    if (layer->getType() != frLayerTypeEnum::ROUTING) {//若当前不是布线层则跳过
       continue;
     }
-    if (layer->getDir() != getDir()) {
+    if (layer->getDir() != getDir()) {  //若当前层方向与目标方向不同则跳过
       continue;
     }
-    result.clear();
-    regionQuery->queryGuide(getExtBox(), lNum, result);
+    result.clear(); //初始化结果集
+    regionQuery->queryGuide(getExtBox(), lNum, result);//从查询区域中查询guide
     //cout <<endl <<"query1:" <<endl;
+    //遍历查询结果
     for (auto &[boostb, guide]: result) {
+      //获取每个 frGuide 对象的两个点，并输出这些点的坐标和相关网络的名称
       frPoint pt1, pt2;
       guide->getPoints(pt1, pt2);
       //if (enableOutput) {
@@ -519,11 +536,12 @@ void FlexTAWorker::initIroutes() {
       //}
       //guides.push_back(guide);
       //cout <<endl;
+
+      //根据guide文件初始化iroute
       initIroute(guide);
     }
     //sort(guides.begin(), guides.end(), [](const frGuide *a, const frGuide *b) {return *a < *b;});
   }
-
   if (enableOutput) {
     bool   isH = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);
     double dbu = getDesign()->getTopBlock()->getDBUPerUU();
@@ -743,7 +761,7 @@ void FlexTAWorker::initFixedObjs_helper(const frBox &box, frCoord bloatDist, frL
   }
 }
 
-
+//初始化固定对象
 void FlexTAWorker::initFixedObjs() {
   //bool enableOutput = false;
   ////bool enableOutput = true;
@@ -935,9 +953,10 @@ frCoord FlexTAWorker::initFixedObjs_calcBloatDist(frBlockObject *obj, const frLa
   return bloatDist;
 }
 
+//轨道分配之前的初始化，准备数据和结构
 void FlexTAWorker::init() {
-  rq.init();
-  initTracks();
+  rq.init();  //区域查询的初始化
+  initTracks(); //初始化轨道
   if (getTAIter() != -1) {
     initFixedObjs();
   }

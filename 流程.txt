@@ -18,6 +18,8 @@ main()中的router.main() - > 主函数  main.cpp
 
 
         ta();       //轨道分配  --> 跳转到FlexTA.cpp 370行
+            
+
             initTA(尺寸大小);   //初始化轨道分配过程 --> 跳转到270行
                 initTA_helper();//在291行，对轨道进行分配，跳转到142行
                 //传入参数是迭代次数，尺寸size，偏移，是否水平，panel号
@@ -25,12 +27,27 @@ main()中的router.main() - > 主函数  main.cpp
                 //该工作者的各种基本信息创建完成后，会调用worker.main()函数执行工作者过程；
                 //该过程执行完毕后会统计分配的轨道数量，并将其添加到sol变量中进行计总；
                     worker.main()； //第166行，跳转到42行 - 这是轨道分配的主函数，完整流程
-                        init(); //初始化，准备数据和结构
+                        init(); //初始化，准备数据和结构 -->跳转到FlexTA_init.cpp最后
+                            rq.init();  //区域查询的初始化
+                            initTracks();   //轨道初始化 --> 跳转到36行
+                                对每一层计算其所有轨道数量，并将轨道坐标插入到轨道坐标集合trackCoordSets中，该集合是默认将地址从小到大；
+                                接着将轨道集合中的每个轨道坐标插入到trackLocs中(会按照排好的从小到大的顺序插入)；
+                            initFixedObjs();    //初始化固定对象
+                            initIroutes();  //初始化iroute
+                                从每一层中获取查询区域，并获取该查询区域的guide
+                                initIroute(guide); -->跳转到FlexTA_init.cpp - 从guide中初始化iroute
+                                    initIroute_helper(guide,maxBegin,minEnd,downViaCoordSet,upViaCoordSet,wlen,wlen2); -->跳转到223行
+                                        若!initIroute_helper_pin()，则initIroute_helper_generic()，参数同上
+                                        
+
+                            initCost(); //初始化成本
+                            sortIroutes();  //对iroute排序
+                        
                         assign();  // 执行分配任务 --> 跳到FlexTA_assign.cpp 1149行
-                        assignIroute(); //重新分配该iroute - 跳转到FlexTA_assign.cpp 1107行
+                        assignIroute(); //分配该iroute - 跳转到FlexTA_assign.cpp 1107行
                             assignIroute_init(iroute, &pinS); //根据当前待分配的iroute来初始化pinS集合(set) -->转到FlexTA_assign.cpp第1047行
                                 首先获取worker的查询区域，
-                                若TA还未初始化，则对当前iroute包含的每一个形状，将其从查询区域中移除，并放入队列pinS中
+                                若TA已初始化，则对当前iroute包含的每一个形状，将其从查询区域中移除，并放入队列pinS中
                                 最后将总成本减去当前iroute的成本；
                                 subCost(形状,pin集合pinS)：减少成本，跳转到550行
                                     modCost(形状,增/减,pinS)：根据中间参数决定增加成本(true)或减少成本(false) --> 跳转到555行
@@ -52,7 +69,10 @@ main()中的router.main() - > 主函数  main.cpp
                             assignIroute_updateIroute(iroute, bestTrackLoc, &pinS); //更新iroute的最优轨道坐标 -->跳转到1043行
                                 将iroute中的每个形状的坐标都进行更新，并将每个形状加入到队列pinS和查询区域中
                                 最后添加iroute的被分配次数
-                            assignIroute_updateOthers(pinS);  //更新pinS集合中的其他iroute的坐标和cost
+                            assignIroute_updateOthers(pinS);  //更新pinS集合中的其他iroute的坐标和cost -->跳转到1102行
+                                removeFromReassignIroutes()； //将其他iroute从再分配队列中删除 - 跳转到FlexTA.h
+                                计算其他iroute的成本，若成本有变得更小，则将其再重新插入再分配队列
+
                         end();  // 结束处理，可能包括清理和最终保存
 
             searchRepair(搜索次数,搜索区域大小,偏移量); //执行第一次搜索和修复 - 跳转到312行
