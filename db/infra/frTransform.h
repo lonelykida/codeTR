@@ -77,7 +77,7 @@ namespace fr {
       return ori;
     }
     // util
-    //更新偏移点的x和y
+    //根据偏移方向更新偏移点的x和y
     void updateXform(frPoint &size) {
       switch(orient()) {
         //case frcR0: == default
@@ -161,8 +161,8 @@ namespace fr {
       transformIn.set(resXOffset, resYOffset, resOrient);
     }
   protected:
-    frPoint offset;
-    frOrient ori;
+    frPoint offset; // 偏移点
+    frOrient ori;   // 偏移方向
   };
 }
 

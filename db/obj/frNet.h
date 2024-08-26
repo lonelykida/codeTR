@@ -44,6 +44,7 @@ namespace fr {
   class frInstTerm;
   class frTerm;
 
+  //线网类
   class frNet: public frBlockObject {
   public:
     // constructors
@@ -53,100 +54,130 @@ namespace fr {
                                firstNonRPinNode(nullptr), rpins(), guides(), type(frNetEnum::frcNormalNet), 
                                modified(false), isFakeNet(false) {}
     // getters
+    //获取线网的名字
     const frString& getName() const {
       return name;
     }
+    //获取线网中的const实例(inst)term队列
     const std::vector<frInstTerm*>& getInstTerms() const {
       return instTerms;
     }
+    //获取线网中的实例(inst)term队列
     std::vector<frInstTerm*>& getInstTerms() {
       return instTerms;
     }
+    //获取线网中的const term队列
     const std::vector<frTerm*>& getTerms() const {
       return terms;
     }
+    //获取线网中的term队列
     std::vector<frTerm*>& getTerms() {
       return terms;
     }
+    //获取线网中的shape队列
     std::list<std::unique_ptr<frShape> >& getShapes() {
       return shapes;
     }
+    //获取线网中的const shape队列
     const std::list<std::unique_ptr<frShape> >& getShapes() const {
       return shapes;
     }
+    //获取线网中的via队列
     std::list<std::unique_ptr<frVia> >& getVias() {
       return vias;
     }
+    //获取线网中的const via队列
     const std::list<std::unique_ptr<frVia> >& getVias() const {
       return vias;
     }
+    //获取线网中的patchWire队列
     std::list<std::unique_ptr<frShape> >& getPatchWires() {
       return pwires;
     }
+    //获取线网中的const patchWire队列
     const std::list<std::unique_ptr<frShape> >& getPatchWires() const {
       return pwires;
     }
+    //获取线网中的GRShape队列
     std::list<std::unique_ptr<grShape> >& getGRShapes() {
       return grShapes;
     }
+    //获取线网中的const GRShape队列
     const std::list<std::unique_ptr<grShape> >& getGRShapes() const {
       return grShapes;
     }
+    //获取线网中的GRVia队列
     std::list<std::unique_ptr<grVia> >& getGRVias() {
       return grVias;
     }
+    //获取线网中的const GRVia队列
     const std::list<std::unique_ptr<grVia> >& getGRVias() const {
       return grVias;
     }
+    //获取线网中的node队列
     std::list<std::unique_ptr<frNode> >& getNodes() {
       return nodes;
     }
+    //获取线网中的const node队列
     const std::list<std::unique_ptr<frNode> >& getNodes() const {
       return nodes;
     }
+    //获取线网的根节点
     frNode* getRoot() {
       return root;
     }
+    //获取线网的根GCell节点
     frNode* getRootGCellNode() {
       return rootGCellNode;
     }
+    //获取线网中的第一个非R Pin节点
     frNode* getFirstNonRPinNode() {
       return firstNonRPinNode;
     }
+    //获取线网中的R Pin队列
     std::vector<std::unique_ptr<frRPin> >& getRPins() {
       return rpins;
     }
+    //获取线网中的const R Pin队列
     const std::vector<std::unique_ptr<frRPin> >& getRPins() const {
       return rpins;
     }
+    //获取线网中的Guide队列
     std::vector<std::unique_ptr<frGuide> >& getGuides() {
       return guides;
     }
+    //获取线网中的const Guide队列
     const std::vector<std::unique_ptr<frGuide> >& getGuides() const {
       return guides;
     }
+    //获取线网是否被修改
     const bool isModified() const {
       return modified;
     }
+    //获取线网是否是虚拟网(FakeNet)
     const bool isFake() const {
       return isFakeNet;
     }
 
     // setters
+    //添加实例(inst)term
     void addInstTerm(frInstTerm* in) {
       instTerms.push_back(in);
     }
+    //添加term
     void addTerm(frTerm* in) {
       terms.push_back(in);
     }
+    //设置线网的名字
     void setName(const frString &stringIn) {
       name = stringIn;
     }
+    //添加dr中的shape
     void addShape(std::unique_ptr<frShape> &in) {
       in->addToNet(this);
-      auto rptr = in.get();
+      auto rptr = in.get(); //rptr = repeater - 中继器，转发器
       shapes.push_back(std::move(in));
-      rptr->setIter(--shapes.end());
+      rptr->setIter(--shapes.end());  //设置repeater的指针
     }
     void addVia(std::unique_ptr<frVia> &in) {
       in->addToNet(this);
@@ -236,26 +267,29 @@ namespace fr {
       isFakeNet = in;
     }
     // others
+    // 获取线网的类型 - 普通线网、时钟线网、地线网等
     frNetEnum getType() const {
       return type;
     }
+    // 设置线网的类型
     void setType(frNetEnum in) {
       type = in;
     }
+    // 获取线网的块类型
     virtual frBlockObjectEnum typeId() const override {
       return frcNet;
     }
   protected:
-    frString                                  name;
-    std::vector<frInstTerm*>                  instTerms;
+    frString                                  name;       //线网名
+    std::vector<frInstTerm*>                  instTerms;  //实例的Term队列
     std::vector<frTerm*>                      terms;     // terms is IO
     // dr
-    std::list<std::unique_ptr<frShape> >      shapes;
-    std::list<std::unique_ptr<frVia> >        vias;
-    std::list<std::unique_ptr<frShape> >      pwires;
+    std::list<std::unique_ptr<frShape> >      shapes;   //dr的形状队列
+    std::list<std::unique_ptr<frVia> >        vias;     //dr的通孔列表
+    std::list<std::unique_ptr<frShape> >      pwires;   //dr的补丁线(patch wire)列表
     // gr
-    std::list<std::unique_ptr<grShape> >      grShapes;
-    std::list<std::unique_ptr<grVia> >        grVias;
+    std::list<std::unique_ptr<grShape> >      grShapes; //gr的形状队列
+    std::list<std::unique_ptr<grVia> >        grVias;   //gr的通孔列表
     //
     std::list<std::unique_ptr<frNode> >       nodes; // the nodes at the beginning of the list correspond to rpins
                                                      // there is no guarantee that first element is root

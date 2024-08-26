@@ -3019,7 +3019,8 @@ void FlexDRWorker::route_queue()
 
     // init net status// 重置网络的撕裂状态 - 都变成0
     route_queue_resetRipup();
-    // init marker cost// 添加标记成本到队列。
+    // init marker cost// 添加标记成本到队列。  // 初始化标记成本
+    //xxxxxx
     route_queue_addMarkerCost();
     // init reroute queue
     // route_queue_init_queue(rerouteNets);

@@ -35,11 +35,13 @@
 #include "db/infra/frTransform.h"
 
 namespace fr {
+  //形状基类，继承自块，是所有形状的基类
   class frFig: public frBlockObject {
   public:
     // constructors
     frFig(): frBlockObject() {}
     // getters
+    //获取形状的边界
     virtual void getBBox(frBox &box) const = 0;
     //virtual void getBBox(box_t &box) const = 0;
     // setters
@@ -51,6 +53,7 @@ namespace fr {
   };
 
   class frNet;
+  //相连接的形状类
   class frConnFig: public frFig {
   public:
     // constructors
@@ -73,6 +76,7 @@ namespace fr {
   };
 
   class frPin;
+  //pin形状类
   class frPinFig: public frConnFig {
   public:
     frPinFig(): frConnFig() {}

@@ -35,11 +35,13 @@
 #include "db/infra/frTransform.h"
 
 namespace fr {
+  //ta的形状类
   class taFig: public taBlockObject {
   public:
     // constructors
     taFig(): taBlockObject() {}
     // getters
+    //获取形状的边界
     virtual void getBBox(frBox &box) const = 0;
     //virtual void getBBox(box_t &box) const = 0;
     // setters
@@ -51,6 +53,7 @@ namespace fr {
   };
 
   class frNet;
+  //ta的连接形状
   class taConnFig: public taFig {
   public:
     // constructors
@@ -73,11 +76,12 @@ namespace fr {
   };
 
   class taPin;
-  class taPinFig: public taConnFig {
+  //ta的pin形状
+  class taPinFig: public taConnFig {  
   public:
     taPinFig(): taConnFig() {}
     // getters
-    virtual bool hasPin() const = 0;
+    virtual bool hasPin() const = 0;  //纯虚函数
     virtual taPin* getPin() const = 0;
     // setters
     virtual void addToPin(taPin* in) = 0;

@@ -202,12 +202,13 @@ namespace fr {
     void setExtrapolateTypeColUpper(frExtrapolateType &type);
 
     // others
+    //在间距表中查找对应的值 - 传入行和列
     valClass find(const rowClass &rowVal, const colClass &colVal) const {
       valClass retVal;
-      frUInt4 rowIdx = getRowIdx(rowVal);
-      frUInt4 colIdx = getColIdx(colVal);
+      frUInt4 rowIdx = getRowIdx(rowVal); //获取行的索引
+      frUInt4 colIdx = getColIdx(colVal); //获取列的索引
       //std::cout << "rowIdx = " << rowIdx << ", colIdx = " << colIdx << std::endl <<std::flush;
-      retVal = vals[rowIdx][colIdx];
+      retVal = vals[rowIdx][colIdx];    //返回间距查找表中对应的值
       return retVal;
     }
     valClass findMin() const {
@@ -237,11 +238,13 @@ namespace fr {
     }
 
   private:
+    //根据行的值确定其索引
     frUInt4 getRowIdx(const rowClass &rowVal) const {
       // currently only implement spacingtable style
       auto pos = --(std::lower_bound(rows.begin(), rows.end(), rowVal));
       return std::max(0, (int)std::distance(rows.begin(), pos));
     }
+    //根据列的值确定其索引
     frUInt4 getColIdx(const colClass &colVal) const {
       // currently only implement spacingtable style
       auto pos = --(std::lower_bound(cols.begin(), cols.end(), colVal));

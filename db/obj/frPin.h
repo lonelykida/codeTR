@@ -100,8 +100,9 @@ namespace fr {
     int getNumPinAccess() const {
       return aps.size();
     }
+    //返回当前pin是否有访问点，若有则返回true
     bool hasPinAccess() const {
-      return !aps.empty();
+      return !aps.empty();  //访问点集合不空时返回true
     }
     frPinAccess* getPinAccess(int idx) const {
       return aps[idx].get();
@@ -153,7 +154,7 @@ namespace fr {
     std::map< frLayerNum, PolygonSet> layer2PolySet;
     //frVector<std::unique_ptr<FlexAccessPattern> > accessPatterns;
     //std::map< frOrient, frVector<std::unique_ptr<FlexAccessPattern> > > orient2APs;
-    std::vector<std::unique_ptr<frPinAccess> > aps; // not copied in copy constructor
+    std::vector<std::unique_ptr<frPinAccess> > aps; // not copied in copy constructor - pin的访问点集合
   };
 }
 

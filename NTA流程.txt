@@ -64,3 +64,102 @@
     α1:重分配开始时设置为0.1，并在每abs(I(p))/k轮后增加0.1，I(p)是每个panel p中的iroute数量，
     k被设置为10；
     β:是一个很大的数
+
+
+--------------下边是代码流程--------------
+FlexTA.cpp开始：
+init(); //初始化，准备数据和结构
+  先初始化查询区域，接着再初始化轨道，轨道初始化完成后初始化iroute，同时还会根据TAIter的不同，决定
+  是否初始化FixedObjs，或决定是否会先对iroute进行排序，在下边的代码流程中这些不确定的流程会在开头用
+  *号标识
+  rq.init();  //区域查询的初始化
+  initTracks(); //初始化轨道
+  *initFixedObjs();
+  initIroutes();  //初始化iroute
+  *initCosts();   //初始化cost
+  *sortIroutes(); //对iroute进行排序
+assign(); //执行分配任务
+  将重分配队列中的iroute拿出来，这个重分配队列应该是可以重用的，第一次分配和重分配的iroute都在里边；
+  另外再搞个buffer缓冲区，用来记录哪些iroute已经被分配过了，避免重复分配；
+  接着就开始循环把重分配队列中的iroute一个一个拿来分配；
+  最后分配完了再将其记录到buffer中，并将已分配的iroute数量+1，这个计数变量也是buffer的计数指针(类似栈顶)
+  分配函数如下:
+  assignIroute(把iroute传入)
+    在分配过程中，会创建一个pinS集合，用来存放iroute，首先根据当前iroute初始化pinS，接着再找到当前
+    iroute可以用的轨道的范围，接着再从这些轨道中找到最佳轨道将其分配给iroute，最后更新iroute的最优轨道坐标
+    和其他iroute的坐标及cost
+    assignIroute_init(iroute,pinS);                   //1.初始化iroute相关的pinS集合
+      对iroute中的每个形状，将其从查询区域中移除，接着再修改该形状在pinS中的成本；
+      最后从总成本中扣除当前iroute的成本；
+      在该过程中，修改形状在pinS中的成本函数为:
+      subCost(uPinFig.get(), pinS);
+        会调用函数：
+        modeCost(pinFig，是否增加成本，pinS)
+          1.若当前形状pinFig是路径：
+            获取当前形状的真实指针，接着获取该形状所在的层和形状边界box；
+            接着修改了一大堆成本，不过不知道是什么东西：
+            //modMinSpacingCostPlanar(当前形状所在层边界,层号, pin指针, isAddCost, pinS); // must be current TA layer
+            modMinSpacingCostPlanar(box, layerNum, obj, isAddCost, pinS); // must be current TA layer
+              看样子像修改最小间距约束，
+            //modMinSpacingCostVia(box, layerNum, obj, isAddCost,是否upperVia,是否CurrPs, pinS);
+            modMinSpacingCostVia(box, layerNum, obj, isAddCost, true , true, pinS);
+            modMinSpacingCostVia(box, layerNum, obj, isAddCost, false, true, pinS);
+          2.若当前形状pinFig是通孔：
+            2.1.获取当前通孔对象实际指针、通孔上层的边界box和层号；
+            2.2.若当前布线方向是该层的优先布线方向，则修改SpacingCostPlanar，和1中的第一个函数一样
+            2.3.接着修改MinSpacingCostVia，和1中的后两个函数一样
+            2.4.获取当前通孔对象的下层的边界box和层号；
+            2.5.若当前布线方向是该层的优先布线方向，则修改SpacingCostPlanar，和1中的第一个函数一样
+            2.6.接着修改MinSpacingCostVia，和1中的后两个函数一样
+          3.若不是上述两种形状，则出错。
+    assignIroute_availTracks(iroute,lNum,idx1,idx2);  //2.找到iroute可用轨道范围idx1和idx2；
+      先找到当前iroute的起终点，并根据起终点获取到irote所属的Gcell(通过索引)，接着再找到当前Gcell的边界，这
+      是找寻的前提条件；接着判断当前iroute的横纵方向，根据纵横方向确定当前Gcell的轨道边界，轨道边界就是Gcell
+      边界的上下或左右边框；
+      接着根据轨道边界的上下界查询当前层轨道的索引范围，获取轨道的详细索引，将其分配给idx1和idx2；
+      getTrackIdx(Low,High,lNum,idx1,idx2);//根据上下边界获取轨道的索引
+    assignIroute_bestTrack(iroute,lNum,idx1,idx2);    //3.找到最佳轨道并分配
+      分当前的iroute是否是pin；
+      3.1.若是pin的话：
+        3.1.1.若Wlen1大于0：
+          首先确定起始轨道坐标(在idx1和idx2中间)；
+          确定好了后试着把iroute分配给从起始坐标开始到idx2的每一个轨道，直到找到一个无DRC的轨道；
+          若都有DRC，则尝试从起始坐标到idx1的方向再次分配，找是否有无DRC的轨道；
+        3.1.2.若Wlen==0：
+          则起始轨道仍然从中间某个位置开始，遍历idx2-idx1次，依次往左、往右地震荡分配，跟哈希表的二次探测类似；
+        3.1.3.若Wlen<0：
+          从开始位置先往idx1的方向找无DRC的轨道；若找不到合适轨道，则再从开始位置+1的位置，往idx2方向继续找；
+        综上，Wlen变量的意义就是为了确定找的方向和顺序；
+        上边三步找最优轨道用的函数都是:
+        assignIroute_bestTrack_helper(iroute, lNum, i, bestCost, bestTrackLoc, bestTrackIdx, drcCost);
+          传入的参数是iroute及其层号，以及轨道i，同时要更新bestCost、bestTrackLoc、bestTrackIdx和drcCost；
+          先获取当前iroute要分配到的轨道的实际位置，当位置确定了后，计算该iroute分配过去后的currCost，若currCost
+          比当前最好的Cost还要更优，则更新对应的最优轨道和最优代价；
+          此时调用的是：assignIroute_getCost(iroute,trackLoc,drcCost)函数
+          assignIroute_getCost(iroute,trackLoc,drcCost)
+            该函数传入的是当前待分配的iroute，要分配的轨道的实际位置及drcCost；
+            1.先获取当前iroute层的pitch，应该是金属宽度？ - irouteLayerPitch
+            2.接着计算ir分配到轨道t后的代价:
+            outDrcCost = assiginIroute_getDRCCost(iroute,trackLoc);
+            3.若ta还未执行，则DRC代价是outDrcCost的0.05倍，否则是其32倍；
+            4.计算将ir分配到轨道t后的线长代价:
+            wlenCost = assignIroute_getWlenCost(iroute,trackLoc);
+            5.计算将ir分配到轨道t后的pin代价：
+            tmpPinCost = assignIroute_getPinCost(iroute,trackLoc);
+            若计算出来的tmpPinCost是0，则真正的pinCost = 0,否则=irouteLayerPitch*4+tmpPinCost;
+            6.计算tmpAlignCost，应该是对齐代价?
+            tmpAlignCost = assignIroute_getAlignCost(iroute,trackLoc);
+            若tmpAlignCost = 0,则真正的AlignCost = 0，否则=4*irouteLayerPitch+tmpAlignCost;
+            7.最后返回(drcCost+wlenCost+pinCost-alignCost)和(0)相比的最大值
+      3.2.若不是pin的话：
+        3.2.1.若Wlen>0，则从idx2开始一直找到idx1;
+        3.2.2.若Wlen==0,则i从idx1和idx2的中间开始，先从中间往idx2的位置找，若未找到无DRC的轨道，则从中间开始
+          再往idx1的方向找，直到找到无DRC的轨道；
+        3.2.3.若Wlen<0，则从idx1开始往后找，一直找到idx2的位置；
+        上边三步找轨道用的函数也是和3.1中的函数一样
+      3.3.最后：
+        若没找到匹配的轨道，则输出错误信息，然后exit(1)；
+        否则把drc代价加到总的代价里面去，再设置当前iroute的drc代价，最后返回最优轨道的坐标；
+    assignIroute_updateIroute(iroute,bestTrack,pinS); //4.更新iroute的最优轨道坐标
+    assignIroute_updateOthers(pinS);                  //5.更新pinS集合中的其他iroute的坐标和cost
+end();    //执行收尾任务

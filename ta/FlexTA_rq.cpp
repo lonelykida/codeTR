@@ -53,6 +53,7 @@ void FlexTAWorkerRegionQuery::add(taPinFig* fig) {
   }
 }
 
+//从区域中移除pin形状
 void FlexTAWorkerRegionQuery::remove(taPinFig* fig) {
   box_t boostb;
   frPoint bp, ep;
@@ -70,7 +71,7 @@ void FlexTAWorkerRegionQuery::remove(taPinFig* fig) {
     cout <<"Error: unsupported region query add" <<endl;
   }
 }
-
+//区域查询
 void FlexTAWorkerRegionQuery::query(const frBox &box, frLayerNum layerNum, set<taPin*, frBlockObjectComp> &result) {
   vector<rq_rptr_value_t<taPinFig> > temp;
   box_t boostb = box_t(point_t(box.left(), box.bottom()), point_t(box.right(), box.top()));

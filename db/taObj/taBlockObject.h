@@ -33,6 +33,7 @@
 #include "db/obj/frBlockObject.h"
 
 namespace fr {
+  //ta的块对象类
   class taBlockObject: public frBlockObject {
   public:
     // constructors
@@ -42,6 +43,7 @@ namespace fr {
     // getters
     // setters
     // others
+    //返回块形状对象的类型
     frBlockObjectEnum typeId() const override {
       return tacBlockObject;
     }

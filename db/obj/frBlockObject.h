@@ -32,31 +32,40 @@
 #include "frBaseTypes.h"
 
 namespace fr {
+  //父级块对象类
   class frBlockObject {
   public:
     // constructors
     //frBlockObject() {}
-    frBlockObject(): id(-1) {}
+    //无参构造，初始化类型为-1:块对象类型
+    frBlockObject(): id(-1) {}  
+    //拷贝构造
     frBlockObject(const frBlockObject &in): id(in.id) {}
+    //虚析构
     virtual ~frBlockObject() {}
     // getters
+    //获取对象类型的id
     int getId() const {
       return id;
     }
     // setters
+    //设置对象类型的id
     void setId(int in) {
       id = in;
     }
     // others
+    //返回对象类型的id - 是个枚举
     virtual frBlockObjectEnum typeId() const {
       return frcBlockObject;
     }
-    bool operator<(const frBlockObject &rhs) const {
+    //按id从小到大排序
+    bool operator<(const frBlockObject &rhs) const {  
       return id < rhs.id;
     }
   protected:
     int id;
   };
+  //父级块对象的比较函数，按id从小到大排序
   struct frBlockObjectComp {
     bool operator()(const frBlockObject* lhs, const frBlockObject* rhs) const {
       return *lhs < *rhs;

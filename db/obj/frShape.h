@@ -39,13 +39,16 @@ namespace fr {
   class drPathSeg;
   class taPathSeg;
   class drPatchWire;
+  //形状类
   class frShape: public frPinFig {
   public:
     // constructors
     frShape(): frPinFig() {}
     // setters
+    //设置该形状的层数
     virtual void setLayerNum (frLayerNum tmpLayerNum) = 0;
     // getters
+    //获取该形状的层数
     virtual frLayerNum getLayerNum() const = 0;
     // others
     //frBlockObjectEnum typeId() const override = 0;
@@ -75,6 +78,7 @@ namespace fr {
   protected:
   };
 
+  //矩形类，继承自shape
   class frRect: public frShape {
   public:
     // constructors
@@ -122,18 +126,20 @@ namespace fr {
      * addToPin
      * removeFromPin
      */
+
+    //判断是否是pin
     bool hasPin() const override {
       return (owner) && (owner->typeId() == frcPin);
     }
-    
+    //获取当前形状的pin
     frPin* getPin() const override {
       return reinterpret_cast<frPin*>(owner);
     }
-    
+    //设置pin
     void addToPin(frPin* in) override {
       owner = reinterpret_cast<frBlockObject*>(in);
     }
-    
+    //清除pin
     void removeFromPin() override {
       owner = nullptr;
     }
@@ -144,18 +150,20 @@ namespace fr {
      * addToNet
      * removeFromNet
      */
+
+    //判断形状是否是net
     bool hasNet() const override {
       return (owner) && (owner->typeId() == frcNet);
     }
-    
+    //获取当前形状的net指针
     frNet* getNet() const override {
       return reinterpret_cast<frNet*>(owner);
     }
-    
+    //设置net
     void addToNet(frNet* in) override {
       owner = reinterpret_cast<frBlockObject*>(in);
     }
-    
+    //清除net
     void removeFromNet() override {
       owner = nullptr;
     }
@@ -165,28 +173,33 @@ namespace fr {
      * move, in .cpp
      * overlaps in .cpp
      */
+    
+    //获取形状的边界
     void getBBox (frBox &boxIn) const override {
       boxIn.set(box);
     }
+    //设置形状
     void move(const frTransform &xform) override {
       box.transform(xform);
     }
+    //判断形状是否与边界box有重叠
     bool overlaps(const frBox &box) const override {
       frBox rectBox;
       getBBox(rectBox);
       return rectBox.overlaps(box);
     }
-    
+    //设置指针
     void setIter(frListIter<std::unique_ptr<frShape> >& in) override {
       iter = in;
     }
+    //获取指针
     frListIter<std::unique_ptr<frShape> > getIter() const override {
       return iter;
     }
 
   protected:
-    frBox          box;
-    frLayerNum     layer;
+    frBox          box;   //形状的边界
+    frLayerNum     layer; //形状所在层
     frBlockObject* owner; // general back pointer 0
     frListIter<std::unique_ptr<frShape> > iter;
   };

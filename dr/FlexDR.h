@@ -45,18 +45,18 @@ namespace fr
     class FlexDR
     {
     public:
-        // constructors
+        // constructors - 构造，传入设计类
         FlexDR(frDesign *designIn) : design(designIn) {}
-        // getters
+        // getters - 获取Tech块
         frTechObject *getTech() const
         {
             return design->getTech();
         }
-        frDesign *getDesign() const
+        frDesign *getDesign() const // 获取设计块
         {
             return design;
         }
-        frRegionQuery *getRegionQuery() const
+        frRegionQuery *getRegionQuery() const   // 获取区域查询器
         {
             return design->getRegionQuery();
         }

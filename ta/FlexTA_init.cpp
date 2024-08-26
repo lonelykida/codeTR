@@ -114,35 +114,37 @@ bool FlexTAWorker::initIroute_helper_pin(frGuide* guide, frCoord &maxBegin, frCo
   bool enableOutput = false;
   frPoint bp, ep; //获取当前guide的起终点
   guide->getPoints(bp, ep);
-  if (!(bp == ep)) {  //若起终点不相等，则不符合要求
+  if (!(bp == ep)) {  //若起终点不相等，则不符合要求 - 应该是说明不是pin
     return false;
   }
 
-  auto net      = guide->getNet();  //获取guide的线网
+  auto net      = guide->getNet();  //获取当前guide的线网
   auto layerNum = guide->getBeginLayerNum();  //获取guide的层号
   bool isH      = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);//当前布线方向是否水平
-  bool hasDown  = false;//是否有下层 = false
+  bool hasDown  = false;//是否有下层iroute = false
   bool hasUp    = false;//是否有上层 = false
 
-  vector<frGuide*> nbrGuides; //nbrGuide的vector
+  vector<frGuide*> nbrGuides; //nbrGuide的vector，存放的是guide
   auto rq = getRegionQuery(); //查询区域
-  frBox box;  //当前guide的box
-  box.set(bp, bp);  //设置box的起点和终点都是bp
+  frBox box;  //当前guide的边界框box
+  box.set(bp, bp);  //以当前guide的起终点为布线边界框
+
+  //下边的代码在看除了当前层以外，该net是否还有下层及上层的iroute，用hasDown和hasUp来表示
   nbrGuides.clear();  //初始化nbrGuides为空
-  if (layerNum - 2 >= BOTTOM_ROUTING_LAYER) { //判断是否有下层 -- BOTTOM_ROUTING_LAYER = 2
-    rq->queryGuide(box, layerNum - 2, nbrGuides); //查询布线区域
-    for (auto &nbrGuide: nbrGuides) { //遍历nbrGuides
-      if (nbrGuide->getNet() == net) {//若nbrGuide的线网等于guide的线网
+  if (layerNum - 2 >= BOTTOM_ROUTING_LAYER) { //从当前层往下查找的范围，判断当前net是否有在下层的iroute -- BOTTOM_ROUTING_LAYER = 2
+    rq->queryGuide(box, layerNum - 2, nbrGuides); //查询不同层布线区域的guide，放到nbrGuides中
+    for (auto &nbrGuide: nbrGuides) { //遍历nbrGuides中的其他guide
+      if (nbrGuide->getNet() == net) {//在guide中找属于net的线网，若找到，则说明该线网会去下层，即有下层iroute
         hasDown = true; //有下层
         break;
       }
     }
   } 
-  nbrGuides.clear();
-  if (layerNum + 2 < (int)design->getTech()->getLayers().size()) {  //判断是否有上层
+  nbrGuides.clear();  //初始化nbrGuides为空
+  if (layerNum + 2 < (int)design->getTech()->getLayers().size()) {  //判断当前net是否有上层的iroute
     rq->queryGuide(box, layerNum + 2, nbrGuides); //查询布线区域
     for (auto &nbrGuide: nbrGuides) { //遍历nbrGuides
-      if (nbrGuide->getNet() == net) {//若nbrGuide的线网等于guide的线网
+      if (nbrGuide->getNet() == net) {//若nbrGuide的线网等于guide的线网，说明在上层也有当前net的iroute
         hasUp = true; //有上层
         break;
       }
@@ -152,79 +154,91 @@ bool FlexTAWorker::initIroute_helper_pin(frGuide* guide, frCoord &maxBegin, frCo
   //查询pin的结果
   vector<frBlockObject*> result;
   box.set(bp, bp);  //查询区域
-  rq->queryGRPin(box, result);  //查询区域内的pin
+  rq->queryGRPin(box, result);  //查询区域内的GRpin，并放到result中
   frTransform instXform; // (0,0), frcR0   //实例X的形式
   frTransform shiftXform;//改变X的形式
-  frTerm* trueTerm = nullptr; //正确的Term指针
+  frTerm* trueTerm = nullptr; //真实的Term指针
+
   //string  name;
-  for (auto &term: result) {
+  //下边的for循环先找存放pin的真实的Term指针，其实就是在找用于布线连接的pin的结构，将其赋值给trueTerm变量
+  //因为pin的结构都是放在Term里边的
+  for (auto &term: result) {  //对result中的每一个pin对象term
     //bool hasInst = false;
-    frInst* inst = nullptr;
-    if (term->typeId() == frcInstTerm) {
-      if (static_cast<frInstTerm*>(term)->getNet() != net) {
+    frInst* inst = nullptr;   //实例指针inst，初始化为nullptr
+    if (term->typeId() == frcInstTerm) {  //若当前pin的类型是InstTerm
+      if (static_cast<frInstTerm*>(term)->getNet() != net) {  //若该pin不是当前net的线网，则跳过
         continue;
       }
-      //hasInst = true;
-      inst = static_cast<frInstTerm*>(term)->getInst();
-      inst->getTransform(shiftXform);
-      shiftXform.set(frOrient(frcR0));
-      inst->getUpdatedXform(instXform);
-      trueTerm = static_cast<frInstTerm*>(term)->getTerm();
-    } else if (term->typeId() == frcTerm) {
-      if (static_cast<frTerm*>(term)->getNet() != net) {
+      //hasInst = true; 否则若该pin是当前net的线网，则：
+      inst = static_cast<frInstTerm*>(term)->getInst(); //先获取当前pin的实例
+      inst->getTransform(shiftXform); //接着获取转换形式
+      shiftXform.set(frOrient(frcR0));//将转换形式的方向设置为R0
+      inst->getUpdatedXform(instXform);//对当前实例的转换形式进行更新
+      trueTerm = static_cast<frInstTerm*>(term)->getTerm(); //获取真实的Term指针
+    } else if (term->typeId() == frcTerm) { //若当前pin的类型是Term
+      if (static_cast<frTerm*>(term)->getNet() != net) {  //若当前term不是当前net的线网，则跳过
         continue;
       }
-      trueTerm = static_cast<frTerm*>(term);
+      trueTerm = static_cast<frTerm*>(term);  //否则直接将当前pin的Term指针赋值给trueTerm
     }
+    
+    //若找到属于当前线网的trueTerm后
     if (trueTerm) {
-      int pinIdx = 0;
-      int pinAccessIdx = (inst) ? inst->getPinAccessIdx() : -1;
-      for (auto &pin: trueTerm->getPins()) {
-        frAccessPoint* ap = nullptr;
-        if (inst) {
+      int pinIdx = 0; //pin的索引
+      int pinAccessIdx = (inst) ? inst->getPinAccessIdx() : -1; //pin的连接索引，若当前pin有实例，则获取其连接索引
+      for (auto &pin: trueTerm->getPins()) {  //从trueTerm中获取每一个pin
+        frAccessPoint* ap = nullptr;    //pin的AccessPoint指针
+        if (inst) { //若当前pin有实例，则获取其AccessPoint的第pinIdx个pin
           ap = (static_cast<frInstTerm*>(term)->getAccessPoints())[pinIdx];
         }
+        //若当前pin没有访问点，则找下一个pin
         if (!pin->hasPinAccess()) {
           continue;
         }
+        //若当前pin的访问点索引是-1，则找下一个pin
         if (pinAccessIdx == -1) {
           continue;
         }
+        //若当前pin干脆就没有访问点，则找下一个pin
         if (ap == nullptr) {
           continue;
         }
-        frPoint apBp;
+        frPoint apBp; //AccessPoint的Begin坐标
         ap->getPoint(apBp);
         if (enableOutput) {
           cout <<" (" <<apBp.x() * 1.0 / getDesign()->getTopBlock()->getDBUPerUU() <<", "
                       <<apBp.y() * 1.0 / getDesign()->getTopBlock()->getDBUPerUU() <<") origin";
         }
+        //访问点所在的层
         auto bNum = ap->getLayerNum();
+        //根据转换形式将AccessPoint的坐标进行转换
         apBp.transform(shiftXform);
+        //若访问点就在当前层的布线区域内，则更新wlen，wlen2，maxBegin，minEnd
         if (layerNum == bNum && getRouteBox().contains(apBp)) {
-          wlen2 = isH ? apBp.y() : apBp.x();
-          maxBegin = isH ? apBp.x() : apBp.y();
+          wlen2 = isH ? apBp.y() : apBp.x();    //更新wlen2，其值为AccessPoint的y(若水平)坐标或x(若垂直)坐标
+          maxBegin = isH ? apBp.x() : apBp.y(); //更新maxBegin，其值为AccessPoint的x(若水平)坐标或y(若垂直)坐标
           minEnd   = isH ? apBp.x() : apBp.y();
-          wlen = 0;
-          if (hasDown) {
+          wlen = 0; //更新wlen，其值为0
+          if (hasDown) {  //若有下层的iroute，则更新downViaCoordSet(下层通孔坐标集)
             downViaCoordSet.insert(maxBegin);
           }
-          if (hasUp) {
+          if (hasUp) {    //若有上层的iroute，则更新upViaCoordSet(上层通孔坐标集)
             upViaCoordSet.insert(maxBegin);
           }
-          return true;
+          return true;  //返回
         }
-        pinIdx++;
+        pinIdx++;       //若访问点不在当前层，则更新pinIdx
       }
     }
   }
-  
+  //若对result中的每个term，都找不到该net的trueTerm，说明在该层上找不到该net的pin(也就是访问点)，则返回false
   return false;
 }
-
+//初始化Iroute的辅助函数
 void FlexTAWorker::initIroute_helper(frGuide* guide, frCoord &maxBegin, frCoord &minEnd, 
                                      set<frCoord> &downViaCoordSet, set<frCoord> &upViaCoordSet,
                                      int &wlen, frCoord &wlen2) {
+  //先初始化pin，若无pin再初始化generic
   if (!initIroute_helper_pin(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2)) {
     initIroute_helper_generic(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2);
   }
@@ -419,10 +433,10 @@ void FlexTAWorker::initIroute(frGuide *guide) {
   frBox guideBox; //存储guide区域的边框
   guide->getBBox(guideBox); //获取guide区域的边框
   auto layerNum = guide->getBeginLayerNum();  //获取当前guide所属金属层
-  bool isExt = !(getRouteBox().contains(guideBox)); //判断当前guide区域是否在ext区域中
+  bool isExt = !(getRouteBox().contains(guideBox)); //判断当前guide区域是否在布线区域中
   if (isExt) {  //若guide在布线区域中
     // extIroute empty, skip
-    if (guide->getRoutes().empty()) { //若当前guide没有布线需求，则不做任何操作
+    if (guide->getRoutes().empty()) { //若当前guide没有需要布线的形状，即无布线需求，则不做任何操作
       return;
     }
     if (enableOutput) {
@@ -437,7 +451,7 @@ void FlexTAWorker::initIroute(frGuide *guide) {
   set<frCoord> downViaCoordSet, upViaCoordSet;
   int wlen = 0; //线长1初始化为0
   frCoord wlen2 = std::numeric_limits<frCoord>::max();  //线长2初始化为无穷大
-  //通过下边函数更新maxBegin,minEnd,downViaCoordSet,upViaCoordSet,wlen,wlen2等参数
+  //根据guide更新maxBegin,minEnd,downViaCoordSet,upViaCoordSet,wlen,wlen2等参数
   initIroute_helper(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2);
 
   frCoord trackLoc = 0; //标记轨道坐标 
@@ -515,15 +529,15 @@ void FlexTAWorker::initIroutes() {
     if (layer->getType() != frLayerTypeEnum::ROUTING) {//若当前不是布线层则跳过
       continue;
     }
-    if (layer->getDir() != getDir()) {  //若当前层方向与目标方向不同则跳过
+    if (layer->getDir() != getDir()) {  //若当前层布线方向与目标优先布线方向不同则跳过
       continue;
     }
     result.clear(); //初始化结果集
-    regionQuery->queryGuide(getExtBox(), lNum, result);//从查询区域中查询guide
+    regionQuery->queryGuide(getExtBox(), lNum, result);//从查询区域中查询每一层的guide
     //cout <<endl <<"query1:" <<endl;
-    //遍历查询结果
+    //遍历查询结果，其中boostb是边界区域，guide是guide文件
     for (auto &[boostb, guide]: result) {
-      //获取每个 frGuide 对象的两个点，并输出这些点的坐标和相关网络的名称
+      //获取每个 frGuide 对象的两个起终点，并输出这些点的坐标和相关网络的名称
       frPoint pt1, pt2;
       guide->getPoints(pt1, pt2);
       //if (enableOutput) {
@@ -960,9 +974,9 @@ void FlexTAWorker::init() {
   if (getTAIter() != -1) {
     initFixedObjs();
   }
-  initIroutes();
+  initIroutes();//初始化iroute
   if (getTAIter() != -1) {
     initCosts();
-    sortIroutes();
+    sortIroutes();//可能还会对iroute进行排序
   }
 }

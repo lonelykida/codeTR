@@ -2176,7 +2176,7 @@ void FlexDR::initDR(int size, bool enableDRC)
         cout << flush;
     }
 }
-
+//设置dr时处理的批次大小
 void FlexDR::getBatchInfo(int &batchStepX, int &batchStepY)
 {
     batchStepX = 2;
@@ -2225,16 +2225,16 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
         }
         cout << suffix << " optimization iteration ..." << endl;
     }
-    frBox dieBox; // 设计边界框
+    frBox dieBox; // 设计的边界框
     getDesign()->getTopBlock()->getBoundaryBBox(dieBox);
     // getRegionQuery()->initDRObj(getTech()->getLayers().size());
     // getRegionQuery()->printDRObj();
     auto gCellPatterns = getDesign()->getTopBlock()->getGCellPatterns(); // gcell模式
-    auto &xgp = gCellPatterns.at(0);
-    auto &ygp = gCellPatterns.at(1);
-    int numQuickMarkers = 0;
+    auto &xgp = gCellPatterns.at(0);    // X方向的GCell模式
+    auto &ygp = gCellPatterns.at(1);    // Y方向的GCell模式
+    int numQuickMarkers = 0;            //快速标记的数量
     int clipSize = size; // 用于计算每个处理区块的大小
-    int cnt = 0;
+    int cnt = 0;            //初始化count = 0
     // 计算总的迭代次数
     int tot = (((int)xgp.getCount() - 1 - offset) / clipSize + 1) * (((int)ygp.getCount() - 1 - offset) / clipSize + 1);
     int prev_perc = 0; // 上一次迭代进度百分比
@@ -2374,9 +2374,9 @@ void FlexDR::searchRepair(int iter, int size, int offset, int mazeEndIter,
     }
     else
     {
-        vector<unique_ptr<FlexDRWorker>> uworkers;
-        int batchStepX, batchStepY;
-
+        vector<unique_ptr<FlexDRWorker>> uworkers;  //工作者队列
+        int batchStepX, batchStepY; //每批次的X、Y量 - 都被设置为2
+        //在该函数中，batchSizeX、batchSizeY都设置为2
         getBatchInfo(batchStepX, batchStepY);
         // batchSizeX = ((int)xgp.getCount() / size + 1) / batchStepX + 1;
         // batchSizeY = ((int)ygp.getCount() / size + 1) / batchStepY + 1;

@@ -1462,6 +1462,7 @@ namespace fr {
       return tbl;
     }
     frCoord find(frCoord width, frCoord prl) const {
+      //从间距表中查找行列对应的最小间距的值
       return tbl.find(width, prl);
     }
     frCoord findMin() const {
@@ -1483,8 +1484,9 @@ namespace fr {
 
   struct frSpacingTableTwRowType {
     frSpacingTableTwRowType(frCoord in1, frCoord in2): width(in1), prl(in2) {}
-    frCoord width;
+    frCoord width;  
     frCoord prl;
+    //按宽度或PRL从小到大排序
     bool operator<(const frSpacingTableTwRowType &b) const {
       return width < b.width || prl < b.prl;
     }
@@ -1504,7 +1506,7 @@ namespace fr {
     //  return !(*this == b);
     //}
   };
-  // new SPACINGTABLE Constraints
+  // new SPACINGTABLE Constraints - 新的约束间距表
   class frSpacingTableTwConstraint : public frConstraint {
   public:
     // constructor
@@ -1517,6 +1519,7 @@ namespace fr {
     fr2DLookupTbl<frSpacingTableTwRowType, frSpacingTableTwRowType, frCoord>& getLookupTbl() {
       return tbl;
     }
+    //在间距表中查找行列对应的最小间距的值
     frCoord find(frCoord width1, frCoord width2, frCoord prl) const {
       return tbl.find(frSpacingTableTwRowType(width1, prl), frSpacingTableTwRowType(width2, prl));
     }

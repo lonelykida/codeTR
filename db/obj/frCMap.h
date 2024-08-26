@@ -32,41 +32,54 @@
 #include "db/obj/frBlockObject.h"
 
 namespace fr {
+  //Gcell模式 - 有起始坐标、是否水平、间隔、计数
   class frGCellPattern: public frBlockObject {
   public:
     // constructors
     frGCellPattern(): frBlockObject() {}
     // getters
+    //获取是否水平
     bool isHorizontal() const {
       return horizontal;
     }
+    //获取开始坐标
     frCoord getStartCoord() const {
       return startCoord;
     }
+    //获取间隔
     frUInt4 getSpacing() const {
       return spacing;
     }
+    //获取计数
     frUInt4 getCount() const {
       return count;
     }
     // setters
+    //设置是否水平
     void setHorizontal(bool isH) {
       horizontal = isH;
     }
+    //设置开始坐标
     void setStartCoord(frCoord scIn) {
       startCoord = scIn;
     }
+    //设置间隔
     void setSpacing(frUInt4 sIn) {
       spacing = sIn;
     }
+    //设置计数
     void setCount(frUInt4 cIn) {
       count = cIn;
     }
     // others
   protected:
-    bool    horizontal;
-    frCoord startCoord;
+    //是否水平方向
+    bool    horizontal;   
+    //起始坐标
+    frCoord startCoord;   
+    //间隔
     frUInt4 spacing;
+    //计数
     frUInt4 count;
   };
 

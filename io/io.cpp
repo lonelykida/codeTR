@@ -5705,8 +5705,8 @@ int io::Parser::getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUser
 //获取LEF中的宏
 int io::Parser::getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData data)
 {
-    // bool enableOutput = true;
-    bool enableOutput = false;  //是否输出每个宏的信息-测试看看
+    bool enableOutput = true;
+    // bool enableOutput = false;  //是否输出每个宏的信息-测试看看
     //若当前类型不是宏类型，则出错
     if ((type != lefrMacroCbkType))
     {
@@ -5722,7 +5722,7 @@ int io::Parser::getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUser
         originX = 0 originY = 0
         sizeX = 9200 sizeY = 3420
         ORIGIN 0 0 ;
-        SIZE   4.6 1.71 ;
+        SIZE   4.6 1.71 ;   //9200÷2000=4.6  3420÷2000=1.71
         CORE
         originX = 0 originY = 0
         sizeX = 2800 sizeY = 3420

@@ -38,6 +38,7 @@ namespace fr{
   //class taTrack;
   class frGuide;
   //class frNet;
+  //ta的pin类
   class taPin: public taBlockObject {
   public:
     // constructors
@@ -47,6 +48,8 @@ namespace fr{
     //                           wlen_helper(in.wlen_helper), nbrBegin(in.nbrBegin), nbrEnd(in.nbrEnd),
     //                           downViaCoords(in.downViaCoords), upViaCoords(in.upViaCoords), guide(in.guide),
     //                           cost(0) {}
+    
+    //初始构造，不带guide，pinFigs和cost
     taPin(): taBlockObject(), guide(nullptr), pinFigs(), wlen_helper(0), pin(false), wlen_helper2(0), cost(0), numAssigned(0)/*, drcCost(0)*/ {}
     // getters
     //void getCoords(frCoord &bp, frCoord &ep) const {
@@ -78,18 +81,24 @@ namespace fr{
     //std::vector<frCoord>& getViaCoords(bool isUpVia) {
     //  return isUpVia ? upViaCoords : downViaCoords;
     //}
+    
+    //获取guide文件
     frGuide* getGuide() const {
       return guide;
     }
+    //获取pin的const形状
     const std::vector<std::unique_ptr<taPinFig> >& getFigs() const {
       return pinFigs;
     }
+    //获取pin的形状队列
     std::vector<std::unique_ptr<taPinFig> >& getFigs() {
       return pinFigs;
     }
+    //获取pin的cost
     frCost getCost() const {
       return cost;
     }
+    //获取pin的分配次数
     int getNumAssigned() const {
       return numAssigned;
     }
@@ -111,9 +120,12 @@ namespace fr{
     //void setTrackIdx(int in) {
     //  trackIdx = in;
     //}
+
+    //设置线长1
     void setWlenHelper(int in) {
       wlen_helper = in;
     }
+    //设置线长2
     void setWlenHelper2(frCoord in) {
       pin = true;
       wlen_helper2 = in;
@@ -125,19 +137,25 @@ namespace fr{
     //    downViaCoords.push_back(in);
     //  }
     //}
+
+    //设置guide
     void setGuide(frGuide* in) {
       guide = in;
     }
+    //添加pinfig
     void addPinFig(std::unique_ptr<taPinFig> &in) {
       in->addToPin(this);
       pinFigs.push_back(std::move(in));
     }
+    //设置cost
     void setCost(frCost in) {
       cost = in;
     }
+    //添加cost
     void addCost(frCost in) {
       cost += in;
     }
+    //增加1次分配次数
     void addNumAssigned() {
       numAssigned++;
     }
@@ -145,9 +163,12 @@ namespace fr{
     //  drcCost = in;
     //}
     // others
+
+    //返回当前pin的类型 - 枚举量tacPin
     frBlockObjectEnum typeId() const override {
       return tacPin;
     }
+    //重载小于符号，按cost从大到小排序，否则按id从小到大排序
     bool operator<(const taPin &b) const {
       if (this->cost != b.cost) {
         return this->getCost() > b.getCost();
@@ -162,14 +183,21 @@ namespace fr{
     //std::vector<frCoord>   downViaCoords;
     //std::vector<frCoord>   upViaCoords;
     frGuide*                                guide;
-    std::vector<std::unique_ptr<taPinFig> > pinFigs;
+    std::vector<std::unique_ptr<taPinFig> > pinFigs;  //引脚形状的数组，存储引脚形状指针
+    //统计线长的，在irouteInit的过程中会涉及到，从guide中获取
     int                                     wlen_helper; // for nbr global guides
+    //感觉应该是判断该形状是否为pin形状
     bool                                    pin;
+    //与wlen_helper类似
     frCoord                                 wlen_helper2; // for local guides and pin guides
+    //记录该形状的cost的
     frCost                                  cost;
+    //记录该形状被分配的次数
     int                                     numAssigned;
+    //记录该形状的drc cost
     //frCost                                  drcCost;
   };
+  //taPin的比较函数，按cost从大到小排序，否则按id从小到大排序
   struct taPinComp {
     bool operator()(const taPin* lhs, const taPin* rhs) const {
       return *lhs < *rhs;

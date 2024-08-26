@@ -86,7 +86,7 @@ namespace fr {
   //  int        wlen_helper;
   //};
 
-
+  //TA类
   class FlexTA {
   public:
     // constructors
@@ -178,18 +178,23 @@ namespace fr {
     // constructors
     FlexTAWorker(frDesign* designIn): design(designIn), rq(this), numAssigned(0), totCost(0), maxRetry(1)/*, totDrcCost(0)*/ {};
     // setters
+    //设置routeBox
     void setRouteBox(const frBox &boxIn) {
       routeBox.set(boxIn);
     }
+    //设置extBox
     void setExtBox(const frBox &boxIn) {
       extBox.set(boxIn);
     }
+    //设置优先布线方向
     void setDir(frPrefRoutingDirEnum in) {
       dir = in;
     }
+    //设置iroute的迭代次数
     void setTAIter(int in) {
       taIter = in;
     }
+    //添加iroute到iroutes或extIroutes
     void addIroute(std::unique_ptr<taPin> &in, bool isExt = false) {
       in->setId(iroutes.size() + extIroutes.size());
       if (isExt) {
@@ -198,15 +203,18 @@ namespace fr {
         iroutes.push_back(std::move(in));
       }
     }
+    //将iroute in加入再分配队列
     void addToReassignIroutes(taPin* in) {
       reassignIroutes.insert(in);
     }
+    //将iroute in从再分配队列中删掉
     void removeFromReassignIroutes(taPin* in) {
       auto it = reassignIroutes.find(in);
       if (it != reassignIroutes.end()) {
         reassignIroutes.erase(it);
       }
     }
+    //从再分配队列中获取第一个最大cost或最小id的iroute，并从再分配队列中将其删除
     taPin* popFromReassignIroutes() {
       taPin *sol = nullptr;
       if (!reassignIroutes.empty()) {
@@ -216,34 +224,44 @@ namespace fr {
       return sol;
     }
     // getters
+    //获取Tech指针；
     frTechObject* getTech() const {
       return design->getTech();
     }
+    //获取设计块指针
     frDesign* getDesign() const {
       return design;
     }
+    //获取布线区域
     const frBox& getRouteBox() const {
       return routeBox;
     }
+    //获取扩展区域
     const frBox& getExtBox() const {
       return extBox;
     }
+    //获取优先布线方向
     frPrefRoutingDirEnum getDir() const {
       return dir;
     }
+    //获取taIter
     int getTAIter() const {
       return taIter;
     }
+    //获取是否是初始化TA，即taIter是否==0
     bool isInitTA() const {
       return (taIter == 0);
     }
+    //获取区域查询指针
     frRegionQuery* getRegionQuery() const {
       return design->getRegionQuery();
     }
+    //获取轨道的索引上下限
     void getTrackIdx(frCoord loc1, frCoord loc2, frLayerNum lNum, int &idx1, int &idx2) const {
       idx1 = int(std::lower_bound(trackLocs[lNum].begin(), trackLocs[lNum].end(), loc1) - trackLocs[lNum].begin());
       idx2 = int(std::upper_bound(trackLocs[lNum].begin(), trackLocs[lNum].end(), loc2) - trackLocs[lNum].begin()) - 1;
     }
+    //获取当前层in的所有轨道坐标
     const std::vector<frCoord>& getTrackLocs(frLayerNum in) const {
       return trackLocs[in];
     }
@@ -253,17 +271,23 @@ namespace fr {
     //std::vector<taTrack>& getTracks(frLayerNum in) {
     //  return tracks[in];
     //}
+
+    //获取const查询区域
     const FlexTAWorkerRegionQuery& getWorkerRegionQuery() const {
       return rq;
     }
+    //获取查询区域
     FlexTAWorkerRegionQuery& getWorkerRegionQuery() {
       return rq;
     }
+    //获取分配次数
     int getNumAssigned() const {
       return numAssigned;
     }
     // others
+    //TA的主进程
     int main();
+    //TA的主进程
     int main_mt();
     
   protected:
@@ -271,8 +295,8 @@ namespace fr {
     frDesign*                          design;    //设计块对象
     frBox                              routeBox;  //布线区域
     frBox                              extBox;    //扩展区域
-    frPrefRoutingDirEnum               dir;       //布线方向
-    int                                taIter;    //布线迭代次数
+    frPrefRoutingDirEnum               dir;       //优先布线方向
+    int                                taIter;    //ta迭代次数
     FlexTAWorkerRegionQuery            rq;        //布线查询
 
     // // std::vector<std::unique_ptr<drNet> >    nets; //自定义线网
@@ -281,7 +305,7 @@ namespace fr {
     //std::vector<frGuide*>            guides;
     std::vector<std::unique_ptr<taPin> > iroutes; // unsorterd iroutes - 未排序的iroutes集合
     std::vector<std::unique_ptr<taPin> > extIroutes;//未排序的extIroutes集合
-    std::vector<std::vector<frCoord> >   trackLocs; //轨道的坐标集合
+    std::vector<std::vector<frCoord> >   trackLocs; //每一层轨道的坐标按层放在该二维数组中
     //std::vector<std::vector<taTrack> >   tracks;
     //std::priority_queue<taIroute*, std::vector<taIroute*>, taIrouteComp> pq;
     //已排好序的重分配iroute集合

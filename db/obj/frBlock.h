@@ -96,6 +96,7 @@ namespace fr {
       //std::cout <<"dieBox after term " <<llx <<" " <<lly <<" " <<urx <<" " <<ury <<std::endl;
       boxIn.set(llx, lly, urx, ury);
     }
+    //获取边界框
     void getBoundaryBBox(frBox &boxIn) const {
       if (boundaries.size()) {
         boundaries.begin()->getBBox(boxIn);

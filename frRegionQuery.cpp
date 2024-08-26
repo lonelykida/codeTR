@@ -501,11 +501,14 @@ void frRegionQuery::queryGuide(const frBox &box, frLayerNum layerNum, vector<rq_
   guides.at(layerNum).query(bgi::intersects(boostb), back_inserter(result));
   //transform(temp.begin(), temp.end(), back_inserter(result), [](auto &kv) {return kv.second;});
 }
-
+//查询布线层的guides，放到result中
 void frRegionQuery::queryGuide(const frBox &box, frLayerNum layerNum, vector<frGuide*> &result) {
-  vector<rq_rptr_value_t<frGuide> > temp;
+  vector<rq_rptr_value_t<frGuide> > temp; //temp用来存放查询到的guides
+  //设置查询区域
   box_t boostb = box_t(point_t(box.left(), box.bottom()), point_t(box.right(), box.top()));
+  //查询guide，并放到temp中
   guides.at(layerNum).query(bgi::intersects(boostb), back_inserter(temp));
+  //将begin到end中间所有的数据按尾插(back_inserter)的方式插入到result中，插入的元素是kv，但忽略输入元素的first部分，只使用second部分
   transform(temp.begin(), temp.end(), back_inserter(result), [](auto &kv) {return kv.second;});
 }
 
@@ -528,11 +531,14 @@ void frRegionQuery::queryOrigGuide(const frBox &box, frLayerNum layerNum, vector
   origGuides.at(layerNum).query(bgi::intersects(boostb), back_inserter(result));
   //transform(temp.begin(), temp.end(), back_inserter(result), [](auto &kv) {return kv.second;});
 }
-
+//查询GRPin
 void frRegionQuery::queryGRPin(const frBox &box, vector<frBlockObject*> &result) {
-  vector<rq_rptr_value_t<frBlockObject> > temp;
+  vector<rq_rptr_value_t<frBlockObject> > temp; //存放pin的临时数组
+  //查询区域的边界，即guide的边界框
   box_t boostb = box_t(point_t(box.left(), box.bottom()), point_t(box.right(), box.top()));
+  //查询pin并放到temp中
   grPins.query(bgi::intersects(boostb), back_inserter(temp));
+  //将begin到end中间所有的数据按尾插(back_inserter)的方式插入到result中，插入的元素是kv，但忽略输入元素的first部分，只使用second部分
   transform(temp.begin(), temp.end(), back_inserter(result), [](auto &kv) {return kv.second;});
 }
 
