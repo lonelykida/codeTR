@@ -76,6 +76,42 @@ init(); //初始化，准备数据和结构
   initTracks(); //初始化轨道
   *initFixedObjs();
   initIroutes();  //初始化iroute
+    对每一个布线层进行查询，若不是布线层会跳过，在布线层中，先查询该层中的所有guide，接着再根据每一个guide
+    对iroute进行初始化，初始化执行的是下边的函数：
+    initIroute(guide);
+      1.构造一个iroute空指针，将guide、guide边界框和guide所属金属层都获取到，并将guide记录到iroute中；
+      2.若guide在布线区域中，则看当前guide有没有需要布线的线，若无布线线，则说明无布线需求，直接返回；
+      3.接着更新上下通孔的坐标集合(downViaCoordSet和UpViaCoordSet)，这两个集合其实就是当布线层有除了当前层以外
+        的iroute，那么该层就会被记到这个集合里去；
+        更新是通过函数来更行的：
+        initIroute_helper(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2);
+        这里边包含两个函数，分别是针对pin初始化的函数1以及针对通常情况初始化的函数2，如下：
+        函数1：
+        initIroute_helper_pin(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2)
+          进来就判断当前guide的起终点是否一样，应该是判断当前guide记录的是否是pin，如果不同就不是pin，那就会返回false，
+          只要返回false就执行函数2；否则的话就在整个函数中找当前层的布线区域内的访问点，找到后更新完参数就返回true；
+          若没找到就返回false，只要返回false就执行函数2；
+          1.若起终点不同，则返回false，应该是表示不是pin；
+          2.获取guide所属线网、层号以及是否水平；同时维护两个变量hasDown和hasUp表示是否在当前层的上下层还有其他iroute；
+          3.找到guide起终点包围起来的边界框box，接着在当前层的下两层和上两层上分别查找guide文件，并判断是否有当前布线线网的iroute；
+            若有的话更新hasUp和hasDown；
+          4.接着查找GRPin，其实看结果就是找所有的Term块(存放pin的)，将其放到result数组中；
+          5.接着在每一个term中开始玩儿遍历，找是否有属于当前net的term，并将其记为trueTerm；
+          6.在找到trueTerm后，也就是包含当前net的Term后，在Term中遍历每一个pin；
+            若当前pin有实例，则根据pinIdx获取其访问点ap，pinIdx是pin的索引，从0开始，找到一个就+1；
+            否则若无实例，则也无访问点，直接看下一个pin；
+          7.对有访问点，若当前访问点的层就在布线层区域内，且在同一层，则更新wlen2 = 访问点的y坐标(水平)，否则为x坐标；
+            同时更新maxBegin=访问点的x(水平)或访问点的y(垂直)；
+            minEND和maxBegin一样；
+          8.若还有上层iroute或者下层iroute，则将maxBegin，也就是访问点的x(水平)或y(垂直)放到downViaCoordSet或UpViaCoordSet里；
+            若执行了第7、8步，则直接返回true，否则继续找；
+        函数2：
+        initIroute_helper_generic(guide, maxBegin, minEnd, downViaCoordSet, upViaCoordSet, wlen, wlen2)
+      4.更新完成后找到guide中的布线段，并记录其起终点，在代码中看到是随机找的一个布线段，及要布的轨道坐标；
+      5.接着把布线段的起终点按布线方向放到临时变量rptr中去，并设置其所属的金属层和线段类型，最后将其放到iroute的PinFig数组中；
+        到此基本上布线段就确定好了，下边就是从上层通孔坐标集(upViaCoordSet)和下层通孔坐标集(downViaCoordSet)中
+        取出每一个需要打通孔的坐标，接着生成对应的通孔对象，并放到iroute中去；
+      6.最后设置当前iroute的线长Wlen以及Wlen2；并将当前iroute加到iroutes集合中；
   *initCosts();   //初始化cost
   *sortIroutes(); //对iroute进行排序
 assign(); //执行分配任务

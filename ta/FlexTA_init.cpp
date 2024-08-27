@@ -124,7 +124,7 @@ bool FlexTAWorker::initIroute_helper_pin(frGuide* guide, frCoord &maxBegin, frCo
   bool hasDown  = false;//是否有下层iroute = false
   bool hasUp    = false;//是否有上层 = false
 
-  vector<frGuide*> nbrGuides; //nbrGuide的vector，存放的是guide
+  vector<frGuide*> nbrGuides; //nbrGuide的vector，存放的是guide - 临时的变量
   auto rq = getRegionQuery(); //查询区域
   frBox box;  //当前guide的边界框box
   box.set(bp, bp);  //以当前guide的起终点为布线边界框
@@ -234,6 +234,7 @@ bool FlexTAWorker::initIroute_helper_pin(frGuide* guide, frCoord &maxBegin, frCo
   //若对result中的每个term，都找不到该net的trueTerm，说明在该层上找不到该net的pin(也就是访问点)，则返回false
   return false;
 }
+
 //初始化Iroute的辅助函数
 void FlexTAWorker::initIroute_helper(frGuide* guide, frCoord &maxBegin, frCoord &minEnd, 
                                      set<frCoord> &downViaCoordSet, set<frCoord> &upViaCoordSet,
@@ -428,7 +429,7 @@ void FlexTAWorker::initIroute_helper_generic(frGuide* guide, frCoord &minBegin, 
 void FlexTAWorker::initIroute(frGuide *guide) {
   bool enableOutput = false;
   //bool enableOutput = true;
-  auto iroute = make_unique<taPin>(); //iroute指针
+  auto iroute = make_unique<taPin>(); //iroute空指针
   iroute->setGuide(guide);  //将guide文件给iroute
   frBox guideBox; //存储guide区域的边框
   guide->getBBox(guideBox); //获取guide区域的边框
@@ -446,7 +447,7 @@ void FlexTAWorker::initIroute(frGuide *guide) {
     }
   }
   
-  frCoord maxBegin, minEnd; //最大起始点和最小终止点
+  frCoord maxBegin, minEnd; //布线线的最大起始点和最小终止点，即线段的最短长度的左右边界点
   //上/下通孔的坐标集合
   set<frCoord> downViaCoordSet, upViaCoordSet;
   int wlen = 0; //线长1初始化为0
@@ -457,7 +458,7 @@ void FlexTAWorker::initIroute(frGuide *guide) {
   frCoord trackLoc = 0; //标记轨道坐标 
   frPoint segBegin, segEnd; //标记线段起点和终点
   bool    isH         = (getDir() == frPrefRoutingDirEnum::frcHorzPrefRoutingDir);//判断当前布线方向是否为水平
-  // set trackIdx
+  // set trackIdx - 下边是根据线段的布线方向设置起始轨道坐标
   if (!isInitTA()) {  //若当前iroute不是初始化iroute
     for (auto &connFig: guide->getRoutes()) { //对当前guide的布线路线进行遍历
       if (connFig->typeId() == frcPathSeg) {  //若当前布线路线为线段
@@ -475,8 +476,9 @@ void FlexTAWorker::initIroute(frGuide *guide) {
     trackLoc = 0; //若当前iroute未初始化，则设置轨道坐标为0
   }
 
-  unique_ptr<taPinFig> ps = make_unique<taPathSeg>(); //获取ta的线段对象
-  auto rptr = static_cast<taPathSeg*>(ps.get());
+  unique_ptr<taPinFig> ps = make_unique<taPathSeg>(); //初始化空ta的线段对象
+  //下边在把从guide中获得的线段对象放入iroute中
+  auto rptr = static_cast<taPathSeg*>(ps.get());      //相当于临时变量 - repeater 中继器
   if (isH) {  //根据水平或垂直方向设置线段起点和终点
     rptr->setPoints(frPoint(maxBegin, trackLoc), frPoint(minEnd, trackLoc));
   } else {
@@ -523,7 +525,7 @@ void FlexTAWorker::initIroutes() {
   bool enableOutput = false;
   vector<rq_rptr_value_t<frGuide> > result;//存放guide查询结果
   auto regionQuery = getRegionQuery();  //获取查询区域
-  //对每一层进行查询
+  //1.对每一个布线层进行查询
   for (int lNum = 0; lNum < (int)getDesign()->getTech()->getLayers().size(); lNum++) {
     auto layer = getDesign()->getTech()->getLayer(lNum);//获取当前层
     if (layer->getType() != frLayerTypeEnum::ROUTING) {//若当前不是布线层则跳过
@@ -533,7 +535,7 @@ void FlexTAWorker::initIroutes() {
       continue;
     }
     result.clear(); //初始化结果集
-    regionQuery->queryGuide(getExtBox(), lNum, result);//从查询区域中查询每一层的guide
+    regionQuery->queryGuide(getExtBox(), lNum, result);//2.从查询区域中查询每一层的guide
     //cout <<endl <<"query1:" <<endl;
     //遍历查询结果，其中boostb是边界区域，guide是guide文件
     for (auto &[boostb, guide]: result) {
@@ -551,7 +553,7 @@ void FlexTAWorker::initIroutes() {
       //guides.push_back(guide);
       //cout <<endl;
 
-      //根据guide文件初始化iroute
+      //3.根据guide文件初始化iroute
       initIroute(guide);
     }
     //sort(guides.begin(), guides.end(), [](const frGuide *a, const frGuide *b) {return *a < *b;});
